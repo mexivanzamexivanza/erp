@@ -1,54 +1,112 @@
-﻿import { useMemo, useState } from "react";
-import { loadSales, money, saleTotal, saveSales, uid } from "../lib/salesStore";
-import type { Sale, SaleLine } from "../lib/salesStore";
+﻿import { useEffect, useMemo, useState } from "react";
+import { createSalesOrder, listCustomers, listProducts, listSalesOrders } from "../lib/erpApi";
+import type { CustomerRow, ProductRow, SalesOrderRow } from "../lib/erpApi";
 
-const inputStyle: React.CSSProperties = {
-  width: "100%",
-  padding: "10px 12px",
-  borderRadius: 10,
-  border: "1px solid #e5e5e5",
+type DraftLine = {
+  id: string;
+  product_id: string;
+  sku: string;
+  name: string;
+  qty: number;
+  price: number;
 };
 
-const buttonStyle: React.CSSProperties = {
-  padding: "10px 12px",
-  borderRadius: 10,
-  border: "1px solid #111",
-  background: "#111",
-  color: "white",
-  cursor: "pointer",
-};
+function uid(prefix = "id") {
+  return `${prefix}_${Math.random().toString(16).slice(2)}_${Date.now()}`;
+}
 
-const buttonGhost: React.CSSProperties = {
-  ...buttonStyle,
-  background: "transparent",
-  color: "#111",
-};
+function money(n: number) {
+  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(n);
+}
 
 export default function Sales() {
-  const [sales, setSales] = useState<Sale[]>(() => loadSales());
+  // recent orders
+  const [orders, setOrders] = useState<SalesOrderRow[]>([]);
+  const [loadingOrders, setLoadingOrders] = useState(true);
 
-  const [customerName, setCustomerName] = useState("");
-  const [sku, setSku] = useState("");
-  const [name, setName] = useState("");
+  // dropdown data
+  const [customers, setCustomers] = useState<CustomerRow[]>([]);
+  const [products, setProducts] = useState<ProductRow[]>([]);
+  const [loadingLookups, setLoadingLookups] = useState(true);
+
+  // selection
+  const [customerId, setCustomerId] = useState<string>("");
+  const [productId, setProductId] = useState<string>("");
+
+  const selectedCustomer = useMemo(
+    () => customers.find((c) => c.id === customerId) ?? null,
+    [customers, customerId]
+  );
+
+  const selectedProduct = useMemo(
+    () => products.find((p) => p.id === productId) ?? null,
+    [products, productId]
+  );
+
+  // line form
   const [qty, setQty] = useState<number>(1);
   const [price, setPrice] = useState<number>(0);
 
-  const [draftLines, setDraftLines] = useState<SaleLine[]>([]);
-
+  // draft
+  const [draftLines, setDraftLines] = useState<DraftLine[]>([]);
   const draftTotal = useMemo(() => draftLines.reduce((s, l) => s + l.qty * l.price, 0), [draftLines]);
 
+  async function refreshOrders() {
+    setLoadingOrders(true);
+    try {
+      const rows = await listSalesOrders();
+      setOrders(rows);
+    } catch (e: any) {
+      alert(e.message ?? String(e));
+    } finally {
+      setLoadingOrders(false);
+    }
+  }
+
+  async function loadLookups() {
+    setLoadingLookups(true);
+    try {
+      const [cs, ps] = await Promise.all([listCustomers(), listProducts()]);
+      setCustomers(cs);
+      setProducts(ps);
+    } catch (e: any) {
+      alert(e.message ?? String(e));
+    } finally {
+      setLoadingLookups(false);
+    }
+  }
+
+  useEffect(() => {
+    refreshOrders();
+    loadLookups();
+  }, []);
+
+  // When selecting product, auto-fill price (and reset qty)
+  useEffect(() => {
+    if (!selectedProduct) return;
+    setQty(1);
+    setPrice(Number(selectedProduct.price ?? 0));
+  }, [selectedProduct]);
+
   function addLine() {
-    if (!sku.trim() || !name.trim()) return alert("Enter SKU and Item name.");
+    if (!selectedProduct) return alert("Pick a product first.");
     if (qty <= 0) return alert("Qty must be > 0");
     if (price < 0) return alert("Price cannot be negative");
 
     setDraftLines((prev) => [
       ...prev,
-      { id: uid("line"), sku: sku.trim(), name: name.trim(), qty: Number(qty), price: Number(price) },
+      {
+        id: uid("line"),
+        product_id: selectedProduct.id,
+        sku: selectedProduct.sku,
+        name: selectedProduct.name,
+        qty: Number(qty),
+        price: Number(price),
+      },
     ]);
 
-    setSku("");
-    setName("");
+    // clear product selection for next add
+    setProductId("");
     setQty(1);
     setPrice(0);
   }
@@ -57,139 +115,174 @@ export default function Sales() {
     setDraftLines((prev) => prev.filter((l) => l.id !== id));
   }
 
-  function createSale() {
-    if (!customerName.trim()) return alert("Enter customer name.");
+  async function createOrder() {
+    if (!selectedCustomer) return alert("Pick a customer.");
     if (draftLines.length === 0) return alert("Add at least one line item.");
 
-    const sale: Sale = {
-      id: uid("sale"),
-      customerName: customerName.trim(),
-      createdAt: new Date().toISOString(),
-      lines: draftLines,
-    };
+    try {
+      await createSalesOrder({
+        customer_name: selectedCustomer.name,
+        customer_id: selectedCustomer.id,
+        lines: draftLines.map((l) => ({
+          product_id: l.product_id,
+          sku: l.sku,
+          name: l.name,
+          qty: l.qty,
+          price: l.price,
+        })),
+      });
 
-    const next = [sale, ...sales];
-    setSales(next);
-    saveSales(next);
-
-    setCustomerName("");
-    setDraftLines([]);
-  }
-
-  function deleteSale(id: string) {
-    if (!confirm("Delete this sale?")) return;
-    const next = sales.filter((s) => s.id !== id);
-    setSales(next);
-    saveSales(next);
+      setDraftLines([]);
+      await refreshOrders();
+      await loadLookups(); // refresh product stock display etc.
+      alert("Order created.");
+    } catch (e: any) {
+      alert(e.message ?? String(e));
+    }
   }
 
   return (
-    <div style={{ display: "grid", gap: 18 }}>
-      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12 }}>
+    <div style={{ display: "grid", gap: 14 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 12 }}>
         <div>
-          <h1 style={{ margin: 0 }}>Sales</h1>
-          <div style={{ color: "#666", marginTop: 6 }}>Create sales orders (saved in your browser for now).</div>
+          <h1 className="pageTitle">Sales</h1>
+          <div className="pageSub">Pick customer + products, then create an order.</div>
         </div>
-        <div style={{ color: "#666" }}>Orders: {sales.length}</div>
+        <div className="badge">Draft total: {money(draftTotal)}</div>
       </div>
 
-      <section style={{ border: "1px solid #eee", borderRadius: 14, padding: 16 }}>
-        <h2 style={{ marginTop: 0 }}>New sale</h2>
+      <section className="card" style={{ padding: 14 }}>
+        <div style={{ fontWeight: 800, marginBottom: 10 }}>New sales order</div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: 12 }}>
-          <div>
-            <label style={{ fontSize: 12, color: "#555" }}>Customer name</label>
-            <input value={customerName} onChange={(e) => setCustomerName(e.target.value)} style={inputStyle} placeholder="e.g. John Smith" />
-          </div>
-
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-            <div>
-              <label style={{ fontSize: 12, color: "#555" }}>SKU</label>
-              <input value={sku} onChange={(e) => setSku(e.target.value)} style={inputStyle} placeholder="e.g. SKU-001" />
-            </div>
-            <div>
-              <label style={{ fontSize: 12, color: "#555" }}>Item name</label>
-              <input value={name} onChange={(e) => setName(e.target.value)} style={inputStyle} placeholder="e.g. Widget" />
-            </div>
-          </div>
-        </div>
-
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr auto", gap: 12, marginTop: 12, alignItems: "end" }}>
-          <div>
-            <label style={{ fontSize: 12, color: "#555" }}>Qty</label>
-            <input type="number" value={qty} onChange={(e) => setQty(Number(e.target.value))} style={inputStyle} />
-          </div>
-          <div>
-            <label style={{ fontSize: 12, color: "#555" }}>Unit price</label>
-            <input type="number" value={price} onChange={(e) => setPrice(Number(e.target.value))} style={inputStyle} />
-          </div>
-          <div style={{ color: "#666", paddingBottom: 10 }}>Draft total: <b>{money(draftTotal)}</b></div>
-          <button style={buttonStyle} onClick={addLine}>Add line</button>
-        </div>
-
-        {draftLines.length > 0 && (
-          <div style={{ marginTop: 14, overflowX: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse" }}>
-              <thead>
-                <tr style={{ textAlign: "left" }}>
-                  <th style={{ padding: 10, borderBottom: "1px solid #eee" }}>SKU</th>
-                  <th style={{ padding: 10, borderBottom: "1px solid #eee" }}>Name</th>
-                  <th style={{ padding: 10, borderBottom: "1px solid #eee" }}>Qty</th>
-                  <th style={{ padding: 10, borderBottom: "1px solid #eee" }}>Unit</th>
-                  <th style={{ padding: 10, borderBottom: "1px solid #eee" }}>Line total</th>
-                  <th style={{ padding: 10, borderBottom: "1px solid #eee" }}></th>
-                </tr>
-              </thead>
-              <tbody>
-                {draftLines.map((l) => (
-                  <tr key={l.id}>
-                    <td style={{ padding: 10, borderBottom: "1px solid #f3f3f3" }}>{l.sku}</td>
-                    <td style={{ padding: 10, borderBottom: "1px solid #f3f3f3" }}>{l.name}</td>
-                    <td style={{ padding: 10, borderBottom: "1px solid #f3f3f3" }}>{l.qty}</td>
-                    <td style={{ padding: 10, borderBottom: "1px solid #f3f3f3" }}>{money(l.price)}</td>
-                    <td style={{ padding: 10, borderBottom: "1px solid #f3f3f3" }}>{money(l.qty * l.price)}</td>
-                    <td style={{ padding: 10, borderBottom: "1px solid #f3f3f3" }}>
-                      <button style={buttonGhost} onClick={() => removeLine(l.id)}>Remove</button>
-                    </td>
-                  </tr>
+        {loadingLookups ? (
+          <div style={{ color: "var(--muted)" }}>Loading customers/products...</div>
+        ) : (
+          <>
+            {/* Customer dropdown */}
+            <div style={{ display: "grid", gap: 8 }}>
+              <div style={{ fontSize: 12, color: "var(--muted)" }}>Customer</div>
+              <select className="input" value={customerId} onChange={(e) => setCustomerId(e.target.value)}>
+                <option value="">Select customer...</option>
+                {customers.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}{c.email ? ` (${c.email})` : ""}
+                  </option>
                 ))}
-              </tbody>
-            </table>
-
-            <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 12 }}>
-              <button style={buttonStyle} onClick={createSale}>Create sale</button>
+              </select>
             </div>
-          </div>
+
+            <hr className="sep" />
+
+            {/* Product dropdown */}
+            <div style={{ display: "grid", gap: 8 }}>
+              <div style={{ fontSize: 12, color: "var(--muted)" }}>Product</div>
+              <select className="input" value={productId} onChange={(e) => setProductId(e.target.value)}>
+                <option value="">Select product...</option>
+                {products.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.sku} — {p.name} (Stock: {p.stock})
+                  </option>
+                ))}
+              </select>
+
+              {selectedProduct && (
+                <div style={{ color: "var(--muted)", fontSize: 12 }}>
+                  Price: ${Number(selectedProduct.price).toFixed(2)} • Stock: {selectedProduct.stock}
+                </div>
+              )}
+            </div>
+
+            {/* Line fields */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr auto", gap: 10, marginTop: 12, alignItems: "end" }}>
+              <div>
+                <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 6 }}>Qty</div>
+                <input className="input" type="number" value={qty} onChange={(e) => setQty(Number(e.target.value))} />
+              </div>
+              <div>
+                <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 6 }}>Unit price</div>
+                <input className="input" type="number" value={price} onChange={(e) => setPrice(Number(e.target.value))} />
+              </div>
+              <button className="btn" onClick={addLine}>Add line</button>
+            </div>
+
+            {/* Draft table */}
+            {draftLines.length > 0 && (
+              <div style={{ marginTop: 12, overflowX: "auto" }}>
+                <table className="table">
+                  <thead>
+                    <tr>
+                      <th>SKU</th>
+                      <th>Name</th>
+                      <th>Qty</th>
+                      <th>Unit</th>
+                      <th>Total</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {draftLines.map((l) => (
+                      <tr key={l.id}>
+                        <td>{l.sku}</td>
+                        <td>{l.name}</td>
+                        <td>{l.qty}</td>
+                        <td>{money(l.price)}</td>
+                        <td>{money(l.qty * l.price)}</td>
+                        <td style={{ textAlign: "right" }}>
+                          <button className="btn btnDanger" onClick={() => removeLine(l.id)}>Remove</button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+
+                <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 12, gap: 10 }}>
+                  <button className="btn" onClick={() => { setDraftLines([]); }}>Clear draft</button>
+                  <button className="btn btnPrimary" onClick={createOrder}>Create order</button>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </section>
 
-      <section style={{ border: "1px solid #eee", borderRadius: 14, padding: 16 }}>
-        <h2 style={{ marginTop: 0 }}>Recent sales</h2>
+      <section className="card" style={{ padding: 14 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
+          <div style={{ fontWeight: 800 }}>Recent orders</div>
+          <button className="btn" onClick={refreshOrders}>{loadingOrders ? "Loading..." : "Refresh"}</button>
+        </div>
 
-        {sales.length === 0 ? (
-          <div style={{ color: "#666" }}>No sales yet. Create one above.</div>
-        ) : (
-          <div style={{ display: "grid", gap: 10 }}>
-            {sales.map((s) => (
-              <div key={s.id} style={{ border: "1px solid #f1f1f1", borderRadius: 12, padding: 12 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
-                  <div>
-                    <div style={{ fontWeight: 700 }}>{s.customerName}</div>
-                    <div style={{ color: "#666", fontSize: 12 }}>
-                      {new Date(s.createdAt).toLocaleString()} • {s.lines.length} items
-                    </div>
-                  </div>
-                  <div style={{ textAlign: "right" }}>
-                    <div style={{ fontWeight: 800 }}>{money(saleTotal(s))}</div>
-                    <button style={{ ...buttonGhost, marginTop: 8 }} onClick={() => deleteSale(s.id)}>
-                      Delete
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+        <div style={{ marginTop: 12 }}>
+          {loadingOrders ? (
+            <div style={{ color: "var(--muted)" }}>Loading...</div>
+          ) : orders.length === 0 ? (
+            <div style={{ color: "var(--muted)" }}>No orders yet.</div>
+          ) : (
+            <div style={{ overflowX: "auto" }}>
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>Customer</th>
+                    <th>Status</th>
+                    <th>Created</th>
+                    <th>Order ID</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {orders.map((o) => (
+                    <tr key={o.id}>
+                      <td>{o.customer_name}</td>
+                      <td>{o.status}</td>
+                      <td>{new Date(o.created_at).toLocaleString()}</td>
+                      <td style={{ fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace", fontSize: 12 }}>
+                        {o.id.slice(0, 8)}...
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
       </section>
     </div>
   );

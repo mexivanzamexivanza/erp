@@ -1,21 +1,21 @@
-﻿import { useMemo, useEffect, useState } from "react";
-import { createCustomer, listCustomers } from "../lib/erpApi";
-import type { CustomerRow } from "../lib/erpApi";
+﻿import { useEffect, useMemo, useState } from "react";
+import { createVendor, listVendors } from "../lib/erpApi";
+import type { VendorRow } from "../lib/erpApi";
 
-export default function Customers() {
-  const [customers, setCustomers] = useState<CustomerRow[]>([]);
+export default function Vendors() {
+  const [vendors, setVendors] = useState<VendorRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [address, setAddress] = useState("");
 
   async function refresh() {
     setLoading(true);
     try {
-      const rows = await listCustomers();
-      setCustomers(rows);
+      setVendors(await listVendors());
     } catch (e: any) {
       alert(e.message ?? String(e));
     } finally {
@@ -29,17 +29,22 @@ export default function Customers() {
 
   const filtered = useMemo(() => {
     const s = q.trim().toLowerCase();
-    if (!s) return customers;
-    return customers.filter((c) =>
-      [c.name, c.email ?? "", c.phone ?? ""].some((v) => v.toLowerCase().includes(s))
+    if (!s) return vendors;
+    return vendors.filter((v) =>
+      [v.name, v.email ?? "", v.phone ?? ""].some((x) => x.toLowerCase().includes(s))
     );
-  }, [customers, q]);
+  }, [vendors, q]);
 
-  async function addCustomer() {
-    if (!name.trim()) return alert("Customer name required.");
+  async function addVendor() {
+    if (!name.trim()) return alert("Vendor name required.");
     try {
-      await createCustomer({ name: name.trim(), email: email.trim() || undefined, phone: phone.trim() || undefined });
-      setName(""); setEmail(""); setPhone("");
+      await createVendor({
+        name: name.trim(),
+        email: email.trim() || undefined,
+        phone: phone.trim() || undefined,
+        address: address.trim() || undefined,
+      });
+      setName(""); setEmail(""); setPhone(""); setAddress("");
       await refresh();
     } catch (e: any) {
       alert(e.message ?? String(e));
@@ -50,16 +55,16 @@ export default function Customers() {
     <div style={{ display: "grid", gap: 14 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 12 }}>
         <div>
-          <h1 className="pageTitle">Customers</h1>
-          <div className="pageSub">Backed by Supabase Postgres.</div>
+          <h1 className="pageTitle">Vendors</h1>
+          <div className="pageSub">Suppliers you buy from.</div>
         </div>
-        <div className="badge">Total: {customers.length}</div>
+        <div className="badge">Total: {vendors.length}</div>
       </div>
 
       <section className="card" style={{ padding: 14 }}>
-        <div style={{ fontWeight: 800, marginBottom: 10 }}>Add customer</div>
+        <div style={{ fontWeight: 800, marginBottom: 10 }}>Add vendor</div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr 1fr auto", gap: 10, alignItems: "end" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr 1fr 1.4fr auto", gap: 10, alignItems: "end" }}>
           <div>
             <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 6 }}>Name</div>
             <input className="input" value={name} onChange={(e) => setName(e.target.value)} />
@@ -72,16 +77,20 @@ export default function Customers() {
             <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 6 }}>Phone</div>
             <input className="input" value={phone} onChange={(e) => setPhone(e.target.value)} />
           </div>
-          <button className="btn btnPrimary" onClick={addCustomer}>Add</button>
+          <div>
+            <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 6 }}>Address</div>
+            <input className="input" value={address} onChange={(e) => setAddress(e.target.value)} />
+          </div>
+          <button className="btn btnPrimary" onClick={addVendor}>Add</button>
         </div>
       </section>
 
       <section className="card" style={{ padding: 14 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center" }}>
-          <div style={{ fontWeight: 800 }}>Customer list</div>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
+          <div style={{ fontWeight: 800 }}>Vendor list</div>
           <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
             <input className="input" style={{ width: 280 }} placeholder="Search..." value={q} onChange={(e) => setQ(e.target.value)} />
-            <button className="btn" onClick={refresh}>Refresh</button>
+            <button className="btn" onClick={refresh}>{loading ? "Loading..." : "Refresh"}</button>
           </div>
         </div>
 
@@ -89,7 +98,7 @@ export default function Customers() {
           {loading ? (
             <div style={{ color: "var(--muted)" }}>Loading...</div>
           ) : filtered.length === 0 ? (
-            <div style={{ color: "var(--muted)" }}>No customers found.</div>
+            <div style={{ color: "var(--muted)" }}>No vendors found.</div>
           ) : (
             <div style={{ overflowX: "auto" }}>
               <table className="table">
@@ -98,14 +107,16 @@ export default function Customers() {
                     <th>Name</th>
                     <th>Email</th>
                     <th>Phone</th>
+                    <th>Address</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filtered.map((c) => (
-                    <tr key={c.id}>
-                      <td>{c.name}</td>
-                      <td>{c.email ?? "-"}</td>
-                      <td>{c.phone ?? "-"}</td>
+                  {filtered.map((v) => (
+                    <tr key={v.id}>
+                      <td>{v.name}</td>
+                      <td>{v.email ?? ""}</td>
+                      <td>{v.phone ?? ""}</td>
+                      <td>{v.address ?? ""}</td>
                     </tr>
                   ))}
                 </tbody>
