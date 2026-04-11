@@ -10,9 +10,16 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@react-pdf/renderer": "^4.4.0",
     "@supabase/supabase-js": "^2.102.1",
+    "html2canvas": "^1.4.1",
+    "i18next": "^26.0.4",
+    "jspdf": "^4.2.1",
     "react": "^19.2.4",
-    "react-dom": "^19.2.4"
+    "react-barcode": "^1.6.1",
+    "react-dom": "^19.2.4",
+    "react-i18next": "^17.0.2",
+    "recharts": "^3.8.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",

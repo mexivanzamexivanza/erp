@@ -1,114 +1,123 @@
-﻿import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
+import { listSalesOrders, generateSystemNotifications } from "../lib/erpApi";
+import type { SalesOrderRow } from "../lib/erpApi";
 import { supabase } from "../lib/supabaseClient";
+import DashboardCharts from "../components/DashboardCharts";
 
-type Kpi = { label: string; value: string; hint?: string };
-
-function money(n: number) {
-  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(n);
-}
+function money(n: number) { return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(Number(n || 0)); }
 
 export default function Dashboard() {
+  const { t } = useTranslation();
+  const navigate = useNavigate();
+  const [stats, setStats] = useState({ orders: 0, revenue: 0, customers: 0, products: 0, lowStock: 0, employees: 0, openInvoices: 0, unpaidBills: 0, overdueCount: 0 });
+  const [todayOrders, setTodayOrders] = useState<SalesOrderRow[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const [customersCount, setCustomersCount] = useState(0);
-  const [productsCount, setProductsCount] = useState(0);
-  const [lowStockCount, setLowStockCount] = useState(0);
-  const [ordersTodayCount, setOrdersTodayCount] = useState(0);
-  const [salesTodayTotal, setSalesTodayTotal] = useState(0);
-
-  async function refresh() {
-    setLoading(true);
-    try {
-      const customers = await supabase.from("customers").select("id", { count: "exact", head: true });
-      if (customers.error) throw customers.error;
-
-      const products = await supabase.from("products").select("id", { count: "exact", head: true });
-      if (products.error) throw products.error;
-
-      const lowStock = await supabase.from("products").select("id", { count: "exact", head: true }).lte("stock", 5);
-      if (lowStock.error) throw lowStock.error;
-
-      const start = new Date();
-      start.setHours(0, 0, 0, 0);
-
-      const ordersToday = await supabase
-        .from("sales_orders")
-        .select("id, created_at", { count: "exact" })
-        .gte("created_at", start.toISOString());
-
-      if (ordersToday.error) throw ordersToday.error;
-
-      const orderIds = (ordersToday.data ?? []).map((o) => o.id);
-      let total = 0;
-
-      if (orderIds.length > 0) {
-        const lines = await supabase
-          .from("sales_order_lines")
-          .select("qty, price, sales_order_id")
-          .in("sales_order_id", orderIds);
-
-        if (lines.error) throw lines.error;
-
-        total = (lines.data ?? []).reduce((sum, l) => sum + Number(l.qty) * Number(l.price), 0);
-      }
-
-      setCustomersCount(customers.count ?? 0);
-      setProductsCount(products.count ?? 0);
-      setLowStockCount(lowStock.count ?? 0);
-      setOrdersTodayCount(ordersToday.count ?? 0);
-      setSalesTodayTotal(total);
-    } catch (e: any) {
-      alert(e.message ?? String(e));
-    } finally {
-      setLoading(false);
-    }
-  }
-
   useEffect(() => {
-    refresh();
+    async function load() {
+      setLoading(true);
+      try {
+        const today = new Date().toISOString().slice(0, 10);
+        const [customers, products, lowStock, employees, invoices, bills, orders, allOrders] = await Promise.all([
+          supabase.from("customers").select("id", { count: "exact", head: true }),
+          supabase.from("products").select("id", { count: "exact", head: true }),
+          supabase.from("products").select("id", { count: "exact", head: true }).lte("stock", 5),
+          supabase.from("employees").select("id", { count: "exact", head: true }).eq("status", "active"),
+          supabase.from("invoices").select("balance_due,due_at,status").in("status", ["draft","sent"]),
+          supabase.from("bills").select("balance_due").in("status", ["draft","open"]),
+          supabase.from("sales_orders").select("total").gte("created_at", today),
+          listSalesOrders(),
+        ]);
+        const openInvoices = (invoices.data ?? []);
+        const overdueCount = openInvoices.filter(i => i.due_at && new Date(i.due_at) < new Date()).length;
+        const revenue = (orders.data ?? []).reduce((s: number, o: any) => s + Number(o.total || 0), 0);
+        const unpaidBills = (bills.data ?? []).reduce((s: number, b: any) => s + Number(b.balance_due || 0), 0);
+        setStats({ orders: orders.data?.length ?? 0, revenue, customers: customers.count ?? 0, products: products.count ?? 0, lowStock: lowStock.count ?? 0, employees: employees.count ?? 0, openInvoices: openInvoices.length, unpaidBills, overdueCount });
+        setTodayOrders(allOrders.slice(0, 8));
+        generateSystemNotifications().catch(() => {});
+      } catch (e: any) { console.error(e); } finally { setLoading(false); }
+    }
+    load();
   }, []);
 
-  const kpis: Kpi[] = useMemo(
-    () => [
-      { label: "Customers", value: String(customersCount) },
-      { label: "Products", value: String(productsCount) },
-      { label: "Low stock (≤ 5)", value: String(lowStockCount), hint: "Review reorders" },
-      { label: "Orders today", value: String(ordersTodayCount) },
-      { label: "Sales today", value: money(salesTodayTotal) },
-    ],
-    [customersCount, productsCount, lowStockCount, ordersTodayCount, salesTodayTotal]
-  );
+  const kpis = [
+    { icon: "🛒", label: t("dashboard.ordersToday"),    value: stats.orders,                  color: "#2563eb", sub: t("dashboard.salesOrdersToday") },
+    { icon: "💰", label: t("dashboard.revenueToday"),   value: money(stats.revenue),          color: "#16a34a", sub: t("dashboard.fromTodaysOrders") },
+    { icon: "🤝", label: t("dashboard.customers"),      value: stats.customers,               color: "#7c3aed", sub: t("dashboard.totalCustomerAccounts") },
+    { icon: "📦", label: t("dashboard.products"),       value: stats.products,                color: "#0891b2", sub: t("dashboard.activeSkus") },
+    { icon: "⚠️", label: t("dashboard.lowStock"),       value: stats.lowStock,                color: "#d97706", sub: t("dashboard.itemsAtOrBelow5") },
+    { icon: "👥", label: t("dashboard.activeEmployees"),value: stats.employees,               color: "#0891b2", sub: t("dashboard.currentHeadcount") },
+    { icon: "🧾", label: t("dashboard.openInvoices"),   value: stats.openInvoices,            color: stats.overdueCount > 0 ? "#dc2626" : "#16a34a", sub: stats.overdueCount > 0 ? stats.overdueCount + " " + t("dashboard.overdue") : t("dashboard.allCurrent") },
+    { icon: "📄", label: t("dashboard.unpaidBills"),    value: money(stats.unpaidBills),      color: stats.unpaidBills > 0 ? "#dc2626" : "#16a34a", sub: t("dashboard.billsAwaitingPayment") },
+  ];
+
+  const quickActions = [
+    { icon: "🛒", label: t("dashboard.newSale"),            path: "/sales" },
+    { icon: "📋", label: t("dashboard.newPurchaseOrder"),   path: "/purchase-orders" },
+    { icon: "👥", label: t("dashboard.addEmployee"),        path: "/employees" },
+    { icon: "🧾", label: t("dashboard.newInvoice"),         path: "/invoices" },
+    { icon: "📦", label: t("dashboard.checkInventory"),     path: "/inventory" },
+    { icon: "📅", label: t("calendar.title"),               path: "/calendar" },
+    { icon: "💱", label: t("currency.title"),               path: "/currency" },
+    { icon: "👑", label: t("roles.title"),                  path: "/user-roles" },
+  ];
 
   return (
-    <div style={{ display: "grid", gap: 14 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 12 }}>
-        <div>
-          <h1 className="pageTitle">Dashboard</h1>
-          <div className="pageSub">Live KPIs from Supabase.</div>
-        </div>
-        <button className="btn btnPrimary" onClick={refresh} disabled={loading}>
-          {loading ? "Loading..." : "Refresh"}
-        </button>
+    <div style={{ display: "grid", gap: 24 }}>
+      <div>
+        <h1 className="pageTitle">{t("dashboard.title")}</h1>
+        <div className="pageSub">{t("dashboard.subtitle")}</div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 12 }}>
-        {kpis.map((k) => (
-          <div key={k.label} className="card" style={{ padding: 14 }}>
-            <div style={{ color: "var(--muted)", fontSize: 12 }}>{k.label}</div>
-            <div style={{ fontSize: 28, fontWeight: 850, marginTop: 8 }}>{k.value}</div>
-            {k.hint ? <div style={{ color: "var(--muted)", fontSize: 12, marginTop: 6 }}>{k.hint}</div> : null}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 12 }}>
+        {kpis.map((k, i) => (
+          <div key={i} className="kpi-card" style={{ borderTop: "3px solid " + k.color }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+              <div className="kpi-label">{k.label}</div>
+              <span style={{ fontSize: 22 }}>{k.icon}</span>
+            </div>
+            <div className="kpi-value" style={{ color: k.color, fontSize: 28, margin: "8px 0" }}>{loading ? "—" : k.value}</div>
+            <div style={{ fontSize: 11, color: "var(--muted)" }}>{k.sub}</div>
           </div>
         ))}
       </div>
 
-      <div className="card" style={{ padding: 14 }}>
-        <div style={{ fontWeight: 800, marginBottom: 8 }}>Quick start</div>
-        <ol style={{ margin: 0, paddingLeft: 18, color: "#374151" }}>
-          <li>Add customers</li>
-          <li>Add products + stock</li>
-          <li>Create a sales order</li>
-          <li>Return here and refresh</li>
-        </ol>
+      <DashboardCharts />
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+        <div className="card">
+          <div style={{ padding: "14px 20px", borderBottom: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div style={{ fontWeight: 700 }}>{t("dashboard.recentOrders")}</div>
+            <button className="btn" style={{ fontSize: 12 }} onClick={() => navigate("/sales")}>{t("dashboard.viewAll")} →</button>
+          </div>
+          {loading ? <div style={{ padding: 20, color: "var(--muted)" }}>{t("common.loading")}</div> :
+           todayOrders.length === 0 ? <div style={{ padding: 24, color: "var(--muted)", textAlign: "center" }}>{t("dashboard.noOrdersToday")}</div> : (
+            <table className="table">
+              <thead><tr><th>{t("sales.customer")}</th><th>{t("common.status")}</th><th>{t("common.date")}</th></tr></thead>
+              <tbody>{todayOrders.map(o => (
+                <tr key={o.id} style={{ cursor: "pointer" }} onClick={() => navigate("/sales")}>
+                  <td style={{ fontWeight: 600 }}>{o.customer_name}</td>
+                  <td><span className={`badge ${o.status === "confirmed" ? "badge-success" : "badge-primary"}`}>{o.status}</span></td>
+                  <td style={{ color: "var(--muted)", fontSize: 12 }}>{new Date(o.created_at).toLocaleString()}</td>
+                </tr>
+              ))}</tbody>
+            </table>
+          )}
+        </div>
+
+        <div className="card" style={{ padding: 20 }}>
+          <div style={{ fontWeight: 700, marginBottom: 16 }}>⚡ {t("dashboard.quickActions")}</div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+            {quickActions.map((a, i) => (
+              <button key={i} onClick={() => navigate(a.path)} className="btn"
+                style={{ justifyContent: "flex-start", gap: 8, padding: "10px 14px", fontSize: 13, textAlign: "left" }}>
+                <span>{a.icon}</span>{a.label}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );

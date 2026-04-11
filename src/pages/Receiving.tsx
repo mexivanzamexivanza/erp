@@ -1,194 +1,122 @@
-﻿import { useEffect, useMemo, useState } from "react";
-import { listPurchaseOrderLines, listPurchaseOrders, receivePurchaseOrder } from "../lib/erpApi";
-import type { PurchaseOrderLineRow, PurchaseOrderRow } from "../lib/erpApi";
-
-type LineDraft = {
-  id: string;
-  receive_qty: number;
-};
+import { printElement } from "../lib/pdfExport";
+import RecordNotes from "../components/RecordNotes";
+import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { listPurchaseOrders, listPurchaseOrderLines, receivePurchaseOrder } from "../lib/erpApi";
+import type { PurchaseOrderRow, PurchaseOrderLineRow } from "../lib/erpApi";
 
 export default function Receiving() {
-  console.log("DEBUG Receiving", {
-    pos_type: typeof pos,
-    pos_isArray: Array.isArray(pos),
-    lines_type: typeof lines,
-    lines_isArray: Array.isArray(lines),
-    draft_type: typeof draft,
-    draft_isObject: draft && typeof draft === "object",
-  });
-  const [pos, setPos] = useState<PurchaseOrderRow[]>([]);
-  const [loadingPOs, setLoadingPOs] = useState(true);
-
-  const [poId, setPoId] = useState("");
-  const [lines, setLines] = useState<PurchaseOrderLineRow[]>([]);
+  const { t } = useTranslation();
+  const [orders, setOrders]           = useState<PurchaseOrderRow[]>([]);
+  const [selectedPO, setSelectedPO]   = useState("");
+  const [lines, setLines]             = useState<PurchaseOrderLineRow[]>([]);
+  const [receiveQtys, setReceiveQtys] = useState<Record<string, number>>({});
   const [loadingLines, setLoadingLines] = useState(false);
 
-  const [draft, setDraft] = useState<Record<string, LineDraft>>({});
-  const [saving, setSaving] = useState(false);
-
-  const selectedPO = useMemo(() => pos.find((p) => p.id === poId) ?? null, [pos, poId]);
-
-  async function refreshPOs() {
-    setLoadingPOs(true);
-    try {
-      // show only not-fully-received by default (we’ll still allow selecting any)
-      const all = await listPurchaseOrders();
-      setPos(all);
-    } catch (e: any) {
-      alert(e.message ?? String(e));
-    } finally {
-      setLoadingPOs(false);
-    }
+  async function refresh() {
+    try { setOrders(await listPurchaseOrders()); } catch (e: any) { alert(e.message); }
   }
+  useEffect(() => { refresh(); }, []);
 
-  async function loadLines(id: string) {
+  async function loadLines(poId: string) {
+    setSelectedPO(poId); setLines([]); setReceiveQtys({});
+    if (!poId) return;
     setLoadingLines(true);
     try {
-      const ls = await listPurchaseOrderLines(id);
+      const ls = await listPurchaseOrderLines(poId);
       setLines(ls);
-
-      // init draft qty to remaining
-      const next: Record<string, LineDraft> = {};
-      for (const l of ls) {
-        const ordered = Number(l.qty);
-        const received = Number((l as any).received_qty ?? 0);
-        const remaining = Math.max(0, ordered - received);
-        next[l.id] = { id: l.id, receive_qty: remaining > 0 ? remaining : 0 };
-      }
-      setDraft(next);
-    } catch (e: any) {
-      alert(e.message ?? String(e));
-    } finally {
-      setLoadingLines(false);
-    }
+      const qtys: Record<string, number> = {};
+      ls.forEach(l => { qtys[l.id] = Number(l.qty); });
+      setReceiveQtys(qtys);
+    } catch (e: any) { alert(e.message); } finally { setLoadingLines(false); }
   }
 
-  useEffect(() => {
-    refreshPOs();
-  }, []);
+  async function handleReceive(lineId: string) {
+    const qty = receiveQtys[lineId] ?? 0;
+    if (qty <= 0) return alert(t("receiving.nothingToReceive"));
+    try { await receivePurchaseOrder(lineId as any, qty); await loadLines(selectedPO); alert(t("receiving.received2")); }
+    catch (e: any) { alert(e.message); }
+  }
 
-  useEffect(() => {
-    if (!poId) return;
-    loadLines(poId);
-  }, [poId]);
-
-  async function submit() {
-    if (!poId) return alert("Pick a PO.");
-    const payload = Object.values(draft)
-      .filter((d) => Number(d.receive_qty) > 0)
-      .map((d) => ({ po_line_id: d.id, receive_qty: Number(d.receive_qty) }));
-
-    if (payload.length === 0) return alert("Nothing to receive (all qty are 0).");
-
-    setSaving(true);
+  async function handleReceiveAll() {
+    const toReceive = lines.filter(l => (receiveQtys[l.id] ?? 0) > 0);
+    if (toReceive.length === 0) return alert(t("receiving.nothingToReceive"));
     try {
-      await receivePurchaseOrder({ po_id: poId, lines: payload });
-      await refreshPOs();
-      await loadLines(poId);
-      alert("Received.");
-    } catch (e: any) {
-      alert(e.message ?? String(e));
-    } finally {
-      setSaving(false);
-    }
+      await Promise.all(toReceive.map(l => receivePurchaseOrder(l.id as any, receiveQtys[l.id])));
+      await loadLines(selectedPO); alert(t("receiving.received2"));
+    } catch (e: any) { alert(e.message); }
   }
+
+  const selectedOrder = orders.find(o => o.id === selectedPO);
 
   return (
-    <div style={{ display: "grid", gap: 14 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 12 }}>
-        <div>
-          <h1 className="pageTitle">Receiving</h1>
-          <div className="pageSub">Receive items from purchase orders and increase stock.</div>
-        </div>
-        <button className="btn" onClick={refreshPOs}>{loadingPOs ? "Loading..." : "Refresh"}</button>
+    <div style={{ display: "grid", gap: 20 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div><h1 className="pageTitle">{t("receiving.title")}</h1><div className="pageSub">{t("receiving.subtitle")}</div></div>
+        <button className="btn" onClick={refresh}>🔄 {t("common.refresh")}</button>
       </div>
 
-      <section className="card" style={{ padding: 14 }}>
-        <div style={{ fontWeight: 800, marginBottom: 10 }}>Select purchase order</div>
-
-        <select className="input" value={poId} onChange={(e) => setPoId(e.target.value)}>
-          <option value="">Select PO...</option>
-          {(pos ?? []).map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.vendor_name} — {p.status} — {new Date(p.created_at).toLocaleString()}
-            </option>
+      <div className="card" style={{ padding: 20 }}>
+        <div style={{ fontWeight: 700, marginBottom: 12 }}>{t("receiving.selectPO")}</div>
+        <select className="input" style={{ maxWidth: 480 }} value={selectedPO} onChange={e => loadLines(e.target.value)}>
+          <option value="">{t("receiving.selectPOPrompt")}</option>
+          {orders.map(o => (
+            <option key={o.id} value={o.id}>{o.vendor_name} — {o.status} — {new Date(o.created_at).toLocaleDateString()}</option>
           ))}
         </select>
-
-        {selectedPO && (
-          <div style={{ marginTop: 10, color: "var(--muted)", fontSize: 12 }}>
-            Selected PO: <b>{selectedPO.vendor_name}</b> • Status: {selectedPO.status}
+        {selectedOrder && (
+          <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <span className="badge badge-primary">{t("receiving.selectedPO")}: {selectedOrder.vendor_name}</span>
+            <span className={`badge ${selectedOrder.status === "approved" ? "badge-success" : "badge-primary"}`}>{selectedOrder.status}</span>
           </div>
         )}
-      </section>
+      </div>
 
-      <section className="card" style={{ padding: 14 }}>
-        <div style={{ fontWeight: 800, marginBottom: 10 }}>Lines</div>
-
-        {!poId ? (
-          <div style={{ color: "var(--muted)" }}>Pick a PO to load lines.</div>
-        ) : loadingLines ? (
-          <div style={{ color: "var(--muted)" }}>Loading lines...</div>
-        ) : lines.length === 0 ? (
-          <div style={{ color: "var(--muted)" }}>No lines.</div>
-        ) : (
-          <div style={{ overflowX: "auto" }}>
+      {selectedPO && (
+        <div className="card">
+          <div style={{ padding: "14px 16px", borderBottom: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div style={{ fontWeight: 700 }}>{t("purchaseOrders.poLines")}</div>
+            <button className="btn btnPrimary" onClick={handleReceiveAll}>{t("receiving.receive")} {t("common.total")}</button>
+          </div>
+          {loadingLines ? (
+            <div style={{ padding: 20, color: "var(--muted)" }}>{t("receiving.loadingLines")}</div>
+          ) : lines.length === 0 ? (
+            <div style={{ padding: 24, color: "var(--muted)", textAlign: "center" }}>{t("receiving.noLines")}</div>
+          ) : (
             <table className="table">
               <thead>
                 <tr>
                   <th>SKU</th>
-                  <th>Name</th>
-                  <th>Ordered</th>
-                  <th>Received</th>
-                  <th>Remaining</th>
-                  <th>Receive now</th>
+                  <th>{t("common.name")}</th>
+                  <th>{t("receiving.ordered")}</th>
+                  <th>{t("receiving.receiveNow")}</th>
+                  <th></th>
                 </tr>
               </thead>
               <tbody>
-                {(lines ?? []).map((l) => {
-                  const ordered = Number(l.qty);
-                  const received = Number((l as any).received_qty ?? 0);
-                  const remaining = Math.max(0, ordered - received);
-                  return (
-                    <tr key={l.id}>
-                      <td>{l.sku}</td>
-                      <td>{l.name}</td>
-                      <td>{ordered}</td>
-                      <td>{received}</td>
-                      <td>{remaining}</td>
-                      <td style={{ width: 180 }}>
-                        <input
-                          className="input"
-                          type="number"
-                          value={draft[l.id]?.receive_qty ?? 0}
-                          min={0}
-                          max={remaining}
-                          onChange={(e) =>
-                            setDraft((prev) => ({
-                              ...prev,
-                              [l.id]: { id: l.id, receive_qty: Number(e.target.value) },
-                            }))
-                          }
-                        />
-                      </td>
-                    </tr>
-                  );
-                })}
+                {lines.map(l => (
+                  <tr key={l.id}>
+                    <td style={{ fontFamily: "monospace", color: "var(--muted)" }}>{l.sku}</td>
+                    <td style={{ fontWeight: 600 }}>{l.name}</td>
+                    <td>{l.qty}</td>
+                    <td>
+                      <input className="input" style={{ width: 80 }} type="number" min={0} max={Number(l.qty)}
+                        value={receiveQtys[l.id] ?? 0}
+                        onChange={e => setReceiveQtys(prev => ({ ...prev, [l.id]: Number(e.target.value) }))} />
+                    </td>
+                    <td>
+                      <button className="btn btnPrimary" style={{ fontSize: 12, padding: "4px 10px" }}
+                        onClick={() => handleReceive(l.id)}>
+                        {t("receiving.receive")}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
-
-            <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 12 }}>
-              <button className="btn btnPrimary" onClick={submit} disabled={saving}>
-                {saving ? "Saving..." : "Receive"}
-              </button>
-            </div>
-          </div>
-        )}
-      </section>
+          )}
+        </div>
+      )}
     </div>
   );
 }
-
-
-
-

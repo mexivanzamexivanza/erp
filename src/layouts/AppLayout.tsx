@@ -1,133 +1,127 @@
-﻿import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
+import { useTranslation } from "react-i18next";
+import NotificationBell from "../components/NotificationBell";
+import GlobalSearch from "../components/GlobalSearch";
+import { syncCalendarFromERP } from "../lib/erpApi";
 
-const navItem = ({ isActive }: { isActive: boolean }) => ({
-  display: "flex",
-  alignItems: "center",
-  gap: 10,
-  padding: "10px 12px",
-  borderRadius: 10,
-  color: isActive ? "#111827" : "#374151",
-  background: isActive ? "#eef2ff" : "transparent",
-  border: "1px solid " + (isActive ? "#c7d2fe" : "transparent"),
-  fontWeight: isActive ? 700 : 600,
-});
-
-function Icon({ d }: { d: string }) {
+function SideLink({ to, icon, label, badge }: { to: string; icon: string; label: string; badge?: number }) {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d={d} />
-    </svg>
+    <NavLink to={to} className={({ isActive }) => "sidebar-link" + (isActive ? " active" : "")}>
+      <span style={{ fontSize: 15 }}>{icon}</span>
+      <span style={{ flex: 1 }}>{label}</span>
+      {badge != null && badge > 0 && (
+        <span style={{ background: "#dc2626", color: "white", borderRadius: 10, fontSize: 10, fontWeight: 700, minWidth: 18, height: 18, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 4px" }}>{badge > 9 ? "9+" : badge}</span>
+      )}
+    </NavLink>
   );
+}
+function Group({ label }: { label: string }) {
+  return <div className="sidebar-group-label">{label}</div>;
 }
 
 export default function AppLayout() {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  const { t, i18n } = useTranslation();
+  const initials = user?.email?.slice(0, 2).toUpperCase() ?? "??";
 
-  async function doLogout() {
-    await signOut();
-    navigate("/login");
+  async function doLogout() { await signOut(); navigate("/login"); }
+
+  function toggleLanguage() {
+    const next = i18n.language === "es" ? "en" : "es";
+    i18n.changeLanguage(next);
+    localStorage.setItem("erp_language", next);
+  }
+
+  // Auto-sync calendar on mount
+  const syncDone = { current: false };
+  if (!syncDone.current) {
+    syncDone.current = true;
+    syncCalendarFromERP().catch(() => {});
   }
 
   return (
-    <div style={{ minHeight: "100vh", display: "grid", gridTemplateColumns: "260px 1fr" }}>
-      <aside style={{ background: "white", borderRight: "1px solid var(--border)", padding: 14 }}>
-        <div style={{ display: "grid", gap: 10 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <div style={{ fontWeight: 900, letterSpacing: 0.2 }}>ERP</div>
-            <span className="badge">Sales + Inventory</span>
+    <div className="app-shell">
+      <aside className="sidebar">
+        <div className="sidebar-logo">
+          <div className="sidebar-logo-icon">⚡</div>
+          <div>
+            <div className="sidebar-logo-text">ERP System</div>
+            <div className="sidebar-logo-sub">Enterprise Edition</div>
           </div>
+        </div>
+        <div className="sidebar-user">
+          <div className="sidebar-avatar">{initials}</div>
+          <div className="sidebar-email">{user?.email ?? "Signed out"}</div>
+        </div>
+        <nav className="sidebar-nav">
+          <Group label={t("nav.overview")} />
+          <SideLink to="/dashboard"         icon="📊" label={t("nav.dashboard")} />
+          <SideLink to="/calendar"          icon="📅" label={t("calendar.title")} />
+          <SideLink to="/messages"          icon="💬" label="Mensajes" />
 
-          <div style={{ fontSize: 12, color: "var(--muted)", wordBreak: "break-word" }}>
-            {user?.email ?? "Signed out"}
-          </div>
+          <Group label={t("nav.finance")} />
+          <SideLink to="/financial-reports" icon="📑" label={t("reports.title")} />
+          <SideLink to="/general-ledger"    icon="📒" label={t("nav.generalLedger")} />
+          <SideLink to="/invoices"          icon="🧾" label={t("nav.invoices")} />
+          <SideLink to="/bills"             icon="📄" label={t("nav.bills")} />
+          <SideLink to="/ar-aging"          icon="📈" label={t("nav.arAging")} />
+          <SideLink to="/ap-aging"          icon="📉" label={t("nav.apAging")} />
 
-          <nav style={{ display: "grid", gap: 6, marginTop: 8 }}>
-            <NavLink to="/dashboard" style={navItem}>
-              <Icon d="M3 13h8V3H3v10zM13 21h8V11h-8v10zM13 3h8v6h-8V3zM3 21h8v-6H3v6z" />
-              Dashboard
-            </NavLink>
-            <NavLink to="/customers" style={navItem}>
-              <Icon d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-              Customers
-            </NavLink>
-            <NavLink to="/inventory" style={navItem}>
-              <Icon d="M21 16V8a2 2 0 0 0-1-1.73L13 2.27a2 2 0 0 0-2 0L4 6.27A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
-              Inventory
-            </NavLink>
-            
-            <NavLink to="/stock-movements" style={navItem}>
-              <Icon d="M3 3v18h18M7 14l3 3 7-7" />
-              Stock movements
-            </NavLink>
-<NavLink to="/sales" style={navItem}>
-              <Icon d="M7 13h10l4-8H5.4" />
-              Sales
-            </NavLink>
-            <NavLink to="/invoices" style={navItem}>
-              <Icon d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6" />
-              Invoices
-            </NavLink>
-            <NavLink to="/ar-aging" style={navItem}>
-              <Icon d="M3 3v18h18M7 13h3v5H7zM12 9h3v9h-3zM17 6h3v12h-3z" />
-              AR aging
-            </NavLink>
-            <NavLink to="/audit-log" style={navItem}>
-              <Icon d="M12 20h9M12 4h9M4 6h6M4 10h6M4 14h6M4 18h6" />
-              Audit log
-            </NavLink>
-            <NavLink to="/vendors" style={navItem}>
-              <Icon d="M20 7h-9M20 11h-9M20 15h-9M4 7h.01M4 11h.01M4 15h.01" />
-              Vendors
-            </NavLink>
-            <NavLink to="/bills" style={navItem}>
-              <Icon d="M6 2h9l3 3v17H6zM9 7h6M9 11h6M9 15h6" />
-              Bills
-            </NavLink>
-            <NavLink to="/ap-aging" style={navItem}>
-              <Icon d="M3 3v18h18M7 13h3v5H7zM12 9h3v9h-3zM17 6h3v12h-3z" />
-              AP aging
-            </NavLink>
-            <NavLink to="/purchase-orders" style={navItem}>
-              <Icon d="M9 11h6M9 15h6M7 3h10a2 2 0 0 1 2 2v14l-3-2-3 2-3-2-3 2V5a2 2 0 0 1 2-2z" />
-              Purchase orders
-            </NavLink>
-            <NavLink to="/receiving" style={navItem}>
-              <Icon d="M20 6H9l-2 2H4a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2z" />
-              Receiving
-            </NavLink>
-          </nav>
+          <Group label={t("nav.hr")} />
+          <SideLink to="/employees"         icon="👥" label={t("nav.employees")} />
+          <SideLink to="/payroll"           icon="💰" label={t("nav.payroll")} />
 
-          <hr className="sep" />
+          <Group label={t("nav.sales")} />
+          <SideLink to="/crm"               icon="📣" label={t("crm.title")} />
+          <SideLink to="/sales"             icon="🛒" label={t("nav.salesOrders")} />
+          <SideLink to="/customers"         icon="🤝" label={t("nav.customers")} />
 
-          <button className="btn btnDanger" onClick={doLogout} style={{ width: "100%" }}>
-            Logout
+          <Group label={t("nav.inventory")} />
+          <SideLink to="/inventory"         icon="📦" label={t("nav.inventory")} />
+          <SideLink to="/stock-movements"   icon="🔄" label={t("nav.stockMovements")} />
+
+          <Group label={t("nav.procurement")} />
+          <SideLink to="/vendors"           icon="🏭" label={t("nav.vendors")} />
+          <SideLink to="/purchase-orders"   icon="📋" label={t("nav.purchaseOrders")} />
+          <SideLink to="/receiving"         icon="📥" label={t("nav.receiving")} />
+
+          <Group label={t("manufacturing.title")} />
+          <SideLink to="/manufacturing"     icon="🏗️"  label={t("manufacturing.title")} />
+          <SideLink to="/projects"          icon="📌" label={t("projects.title")} />
+          <SideLink to="/logistics"         icon="🚚" label={t("logistics.title")} />
+
+          <Group label={t("nav.system")} />
+          <SideLink to="/currency"          icon="💱" label={t("currency.pageTitle")} />
+          <SideLink to="/user-roles"        icon="👑" label={t("roles.title")} />
+          <SideLink to="/audit-log"         icon="🔍" label={t("nav.auditLog")} />
+          <SideLink to="/settings"          icon="⚙️"  label={t("nav.settings")} />
+        </nav>
+        <div className="sidebar-footer">
+          <button onClick={toggleLanguage} className="btn"
+            style={{ width: "100%", justifyContent: "center", marginBottom: 8, fontSize: 12 }}>
+            {i18n.language === "es" ? "🇺🇸 English" : "🇲🇽 Español"}
+          </button>
+          <button className="btn btnDanger" onClick={doLogout}
+            style={{ width: "100%", justifyContent: "center" }}>
+            🚪 {t("nav.logout")}
           </button>
         </div>
       </aside>
 
-      <div style={{ display: "grid", gridTemplateRows: "56px 1fr" }}>
-        <header style={{ background: "white", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center" }}>
-          <div className="container" style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <div style={{ fontWeight: 800 }}>ERP</div>
-            <span className="badge">Supabase</span>
+      <div className="main-area">
+        <header className="topbar">
+          <div className="topbar-title">ERP System</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <GlobalSearch />
+            <NotificationBell />
+            <span className="badge badge-primary" style={{ fontSize: 11 }}>● Live</span>
+            <span style={{ fontSize: 12, color: "var(--muted)" }}>{user?.email}</span>
           </div>
         </header>
-
-        <main style={{ padding: 18 }}>
-          <div className="container">
-            <Outlet />
-          </div>
-        </main>
+        <main className="page-content"><Outlet /></main>
       </div>
     </div>
   );
 }
-
-
-
-
-
-
-

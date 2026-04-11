@@ -1,4 +1,4 @@
-﻿import { Navigate, Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes } from "react-router-dom";
 import AppLayout from "./layouts/AppLayout";
 import Dashboard from "./pages/Dashboard";
 import Customers from "./pages/Customers";
@@ -13,41 +13,58 @@ import AuditLog from "./pages/AuditLog";
 import ARAging from "./pages/ARAging";
 import Bills from "./pages/Bills";
 import APAging from "./pages/APAging";
+import DemoGateway from "./pages/DemoGateway";
 import Login from "./pages/Login";
+import Employees from "./pages/Employees";
+import Settings from "./pages/Settings";
+import Payroll from "./pages/Payroll";
+import GeneralLedger from "./pages/GeneralLedger";
+import FinancialReports from "./pages/FinancialReports";
+import CRM from "./pages/CRM";
+import Manufacturing from "./pages/Manufacturing";
+import Projects from "./pages/Projects";
+import Logistics from "./pages/Logistics";
+import Calendar from "./pages/Calendar";
+import UserRoles from "./pages/UserRoles";
+import CurrencyAndTemplates from "./pages/CurrencyAndTemplates";
+import Messages from "./pages/Messages";
 import RequireAuth from "./auth/RequireAuth";
 
 export default function App() {
   return (
     <Routes>
-      <Route path="/login" element={<Login />} />
-
+      <Route path="/demo" element={<DemoGateway />} />
+        <Route path="/login" element={<Login />} />
       <Route path="/" element={<RequireAuth><AppLayout /></RequireAuth>}>
         <Route index element={<Navigate to="/dashboard" replace />} />
-        <Route path="dashboard" element={<Dashboard />} />
-        <Route path="customers" element={<Customers />} />
-        <Route path="inventory" element={<Inventory />} />
-        <Route path="sales" element={<Sales />} />
-        <Route path="stock-movements" element={<StockMovements />} />
-      
-        <Route path="vendors" element={<Vendors />} />
-        <Route path="purchase-orders" element={<PurchaseOrders />} />
-        <Route path="receiving" element={<Receiving />} />
-        <Route path="invoices" element={<Invoices />} />
-        <Route path="audit-log" element={<AuditLog />} />
-        <Route path="ar-aging" element={<ARAging />} />
-        <Route path="bills" element={<Bills />} />
-        <Route path="ap-aging" element={<APAging />} />
+        <Route path="dashboard"         element={<Dashboard />} />
+        <Route path="calendar"          element={<Calendar />} />
+        <Route path="messages"          element={<Messages />} />
+        <Route path="customers"         element={<Customers />} />
+        <Route path="inventory"         element={<Inventory />} />
+        <Route path="sales"             element={<Sales />} />
+        <Route path="stock-movements"   element={<StockMovements />} />
+        <Route path="vendors"           element={<Vendors />} />
+        <Route path="purchase-orders"   element={<PurchaseOrders />} />
+        <Route path="receiving"         element={<Receiving />} />
+        <Route path="invoices"          element={<Invoices />} />
+        <Route path="audit-log"         element={<AuditLog />} />
+        <Route path="ar-aging"          element={<ARAging />} />
+        <Route path="bills"             element={<Bills />} />
+        <Route path="ap-aging"          element={<APAging />} />
+        <Route path="employees"         element={<Employees />} />
+        <Route path="settings"          element={<Settings />} />
+        <Route path="payroll"           element={<Payroll />} />
+        <Route path="general-ledger"    element={<GeneralLedger />} />
+        <Route path="financial-reports" element={<FinancialReports />} />
+        <Route path="crm"               element={<CRM />} />
+        <Route path="manufacturing"     element={<Manufacturing />} />
+        <Route path="projects"          element={<Projects />} />
+        <Route path="logistics"         element={<Logistics />} />
+        <Route path="user-roles" element={<RequireAuth requiredRole="admin"><UserRoles /></RequireAuth>} />
+        <Route path="currency"          element={<CurrencyAndTemplates />} />
       </Route>
-
-      <Route path="*" element={<div style={{ padding: 24 }}>Not found</div>} />
+      <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>
   );
 }
-
-
-
-
-
-
-
-
