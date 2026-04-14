@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
@@ -13,9 +13,18 @@ const STARTER_INCLUDED   = ["Hasta 3 usuarios","Dashboard & Analytics","Clientes
 const STARTER_EXCLUDED   = ["CRM & Pipeline de ventas","Nomina & RRHH","Manufactura & Proyectos","Reportes financieros avanzados","Usuarios ilimitados"];
 const BUSINESS_INCLUDED  = ["Hasta 15 usuarios","Todo lo del plan Starter","CRM & Pipeline de ventas","Nomina & Gestion de RRHH","Proyectos & Tareas","Manufactura & Ordenes de trabajo","Reportes financieros avanzados","Logistica & Operaciones","Soporte prioritario"];
 const BUSINESS_EXCLUDED  = ["API access completo","White-label / marca propia","Usuarios ilimitados"];
-const ENTERPRISE_INCLUDED= ["Usuarios ILIMITADOS","Todo lo del plan Business","API access completo","White-label / tu propia marca","Onboarding personalizado","Gerente de cuenta dedicado","SLA 99.9%","Soporte 24/7"];
+const ENTERPRISE_INCLUDED = ["Usuarios ILIMITADOS","Todo lo del plan Business","API access completo","White-label / tu propia marca","Onboarding personalizado","Gerente de cuenta dedicado","SLA 99.9%","Soporte 24/7"];
 
-const INDUSTRIES = ["Restaurantes","Tiendas","Manufactura","Clinicas","Agencias","Distribuidoras","Construccion","Servicios"];
+const INDUSTRIES = [
+  { label: "Restaurantes",   slug: "restaurantes"   },
+  { label: "Tiendas",        slug: "tiendas"        },
+  { label: "Manufactura",    slug: "manufactura"    },
+  { label: "Clinicas",       slug: "clinicas"       },
+  { label: "Agencias",       slug: "agencias"       },
+  { label: "Distribuidoras", slug: "distribuidoras" },
+  { label: "Construccion",   slug: "construccion"   },
+  { label: "Servicios",      slug: "servicios"      },
+];
 
 const ALL_INCLUDE = ["Actualizaciones automaticas","Copias de seguridad diarias","SSL y datos cifrados","Acceso desde cualquier dispositivo","Soporte en espanol","Demo siempre disponible"];
 
@@ -98,7 +107,7 @@ export default function Pricing() {
     <div style={{ background:"linear-gradient(135deg,#0f172a 0%,#1e1b4b 50%,#0f172a 100%)", minHeight:"100vh", color:"white", fontFamily:"inherit" }}>
 
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"16px 40px", borderBottom:"1px solid rgba(255,255,255,0.1)" }}>
-        <div style={{ display:"flex", alignItems:"center", gap:10, cursor:"pointer" }} onClick={() => navigate("/")}>
+        <div style={{ display:"flex", alignItems:"center", gap:10, cursor:"pointer" }} onClick={() => navigate("/")}>  
           <div style={{ width:32, height:32, borderRadius:8, background:"linear-gradient(135deg,#3b82f6,#6366f1)", display:"flex", alignItems:"center", justifyContent:"center", fontWeight:900, color:"white", fontSize:16 }}>E</div>
           <div>
             <div style={{ fontWeight:800, fontSize:16 }}>ERP System</div>
@@ -204,8 +213,14 @@ export default function Pricing() {
         <div style={{ textAlign:"center", marginBottom:60 }}>
           <div style={{ fontSize:13, color:"rgba(255,255,255,0.5)", letterSpacing:2, textTransform:"uppercase", marginBottom:16 }}>{isEs ? "IDEAL PARA" : "IDEAL FOR"}</div>
           <div style={{ display:"flex", flexWrap:"wrap", gap:10, justifyContent:"center" }}>
-            {INDUSTRIES.map(i => (
-              <span key={i} style={{ background:"rgba(255,255,255,0.07)", border:"1px solid rgba(255,255,255,0.12)", borderRadius:20, padding:"8px 18px", fontSize:14 }}>{i}</span>
+            {INDUSTRIES.map(ind => (
+              <span
+                key={ind.slug}
+                onClick={() => navigate("/industria/" + ind.slug)}
+                style={{ background:"rgba(255,255,255,0.07)", border:"1px solid rgba(255,255,255,0.12)", borderRadius:20, padding:"8px 18px", fontSize:14, cursor:"pointer" }}
+              >
+                {ind.label}
+              </span>
             ))}
           </div>
         </div>
@@ -259,4 +274,3 @@ export default function Pricing() {
     </div>
   );
 }
-
