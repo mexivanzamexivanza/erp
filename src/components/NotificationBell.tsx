@@ -4,9 +4,6 @@ import { useNavigate } from "react-router-dom";
 import { listNotifications, markNotificationRead, markAllNotificationsRead, generateSystemNotifications } from "../lib/erpApi";
 import type { NotificationRow } from "../lib/erpApi";
 
-const TYPE_ICONS: Record<string,string> = { low_stock:"warning", overdue_invoice:"receipt", pending_approval:"check_circle", payroll:"payments", info:"info" };
-const TYPE_COLORS: Record<string,string> = { low_stock:"#f59e0b", overdue_invoice:"#ef4444", pending_approval:"#2563eb", payroll:"#16a34a", info:"#6b7280" };
-
 export default function NotificationBell() {
   const { t } = useTranslation();
   const [open, setOpen]     = useState(false);

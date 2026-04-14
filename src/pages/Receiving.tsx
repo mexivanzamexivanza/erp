@@ -1,5 +1,3 @@
-import { printElement } from "../lib/pdfExport";
-import RecordNotes from "../components/RecordNotes";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { listPurchaseOrders, listPurchaseOrderLines, receivePurchaseOrder } from "../lib/erpApi";
@@ -34,7 +32,7 @@ export default function Receiving() {
   async function handleReceive(lineId: string) {
     const qty = receiveQtys[lineId] ?? 0;
     if (qty <= 0) return alert(t("receiving.nothingToReceive"));
-    try { await receivePurchaseOrder(lineId as any, qty); await loadLines(selectedPO); alert(t("receiving.received2")); }
+    try { await receivePurchaseOrder({ po_id: selectedPO, lines: [{ po_line_id: lineId, receive_qty: qty }] }); await loadLines(selectedPO); alert(t("receiving.received2")); }
     catch (e: any) { alert(e.message); }
   }
 
@@ -42,7 +40,7 @@ export default function Receiving() {
     const toReceive = lines.filter(l => (receiveQtys[l.id] ?? 0) > 0);
     if (toReceive.length === 0) return alert(t("receiving.nothingToReceive"));
     try {
-      await Promise.all(toReceive.map(l => receivePurchaseOrder(l.id as any, receiveQtys[l.id])));
+      await receivePurchaseOrder({ po_id: selectedPO, lines: toReceive.map((l: PurchaseOrderLineRow) => ({ po_line_id: l.id, receive_qty: receiveQtys[l.id] })) });
       await loadLines(selectedPO); alert(t("receiving.received2"));
     } catch (e: any) { alert(e.message); }
   }

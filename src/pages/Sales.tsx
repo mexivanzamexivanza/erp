@@ -46,7 +46,8 @@ export default function Sales() {
     if (!customerId) return alert(t("sales.pickCustomer"));
     if (draftLines.length === 0) return alert(t("sales.addOneLine"));
     try {
-      await createSalesOrder({ customer_id: customerId, lines: draftLines.map(l => ({ product_id: l.product_id, qty: l.qty, price: l.price })) });
+      const customer = customers.find(c => c.id === customerId);
+      await createSalesOrder({ customer_id: customerId, customer_name: customer?.name ?? "", lines: draftLines.map(l => ({ product_id: l.product_id, sku: l.sku, name: l.name, qty: l.qty, price: l.price })) });
       setCustomerId(""); setDraftLines([]); await refresh(); alert(t("sales.created"));
     } catch (e: any) { alert(e.message); }
   }

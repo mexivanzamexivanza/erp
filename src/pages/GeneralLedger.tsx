@@ -1,4 +1,3 @@
-import { printElement } from "../lib/pdfExport";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { listJournalEntries, createJournalEntry, voidJournalEntry, listJournalLines, listAccounts, getTrialBalance } from "../lib/erpApi";
@@ -57,7 +56,18 @@ export default function GeneralLedger() {
     const validLines = draftLines.filter(l => l.account_id && (l.debit > 0 || l.credit > 0));
     if (validLines.length < 2) return alert(t("ledger.addLine"));
     try {
-      await createJournalEntry({ reference: ref, memo, lines: validLines.map(l => ({ account_id: l.account_id, debit: l.debit, credit: l.credit })) });
+      await createJournalEntry({
+        entry_date: new Date().toISOString().slice(0, 10),
+        reference: ref,
+        description: memo,
+        lines: validLines.map((l: DraftLine) => ({
+          account_id: l.account_id,
+          account_code: "",
+          account_name: l.account_name,
+          debit: l.debit,
+          credit: l.credit,
+        })),
+      });
       setRef(""); setMemo(""); setDraftLines([{ id: uid(), account_id: "", account_name: "", debit: 0, credit: 0 }, { id: uid(), account_id: "", account_name: "", debit: 0, credit: 0 }]);
       setShowForm(false); await refresh();
     } catch (e: any) { alert(e.message); }
@@ -143,7 +153,7 @@ export default function GeneralLedger() {
                       <div style={{ fontWeight: 700 }}>{e.reference}</div>
                       <span className={`badge ${STATUS_COLORS[e.status] ?? "badge"}`}>{e.status}</span>
                     </div>
-                    {e.memo && <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 2 }}>{e.memo}</div>}
+                    {e.description && <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 2 }}>{e.description}</div>}
                     <div style={{ display: "flex", justifyContent: "space-between", marginTop: 4 }}>
                       <span style={{ fontSize: 11, color: "var(--muted)" }}>{new Date(e.created_at).toLocaleDateString()}</span>
                       {e.status === "posted" && <button className="btn btnDanger" style={{ fontSize: 11, padding: "2px 8px" }} onClick={ev => { ev.stopPropagation(); handleVoid(e.id); }}>{t("ledger.voidEntry")}</button>}
@@ -157,7 +167,7 @@ export default function GeneralLedger() {
                 <>
                   <div style={{ padding: "14px 20px", borderBottom: "1px solid var(--border)" }}>
                     <div style={{ fontWeight: 700, fontSize: 15 }}>{selected.reference}</div>
-                    {selected.memo && <div style={{ fontSize: 12, color: "var(--muted)" }}>{selected.memo}</div>}
+                    {selected.description && <div style={{ fontSize: 12, color: "var(--muted)" }}>{selected.description}</div>}
                   </div>
                   <table className="table">
                     <thead><tr><th>{t("ledger.account")}</th><th style={{ textAlign: "right" }}>{t("ledger.debit")}</th><th style={{ textAlign: "right" }}>{t("ledger.credit")}</th></tr></thead>

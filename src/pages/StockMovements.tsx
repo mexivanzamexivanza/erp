@@ -1,4 +1,3 @@
-import { printElement } from "../lib/pdfExport";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { createInventoryMovement, listInventoryMovements, listProducts } from "../lib/erpApi";
@@ -15,7 +14,7 @@ export default function StockMovements() {
   const [note, setNote] = useState("");
   const selectedProduct = useMemo(() => products.find((p) => p.id === productId) ?? null, [products, productId]);
 
-  async function refresh() { setLoading(true); try { const [ps, ms] = await Promise.all([listProducts(), listInventoryMovements({ limit: 200 })]); setProducts(ps); setMovements(ms); } catch (e: any) { alert(e.message); } finally { setLoading(false); } }
+  async function refresh() { setLoading(true); try { const [ps, ms] = await Promise.all([listProducts(), listInventoryMovements()]); setProducts(ps); setMovements(ms); } catch (e: any) { alert(e.message); } finally { setLoading(false); } }
   useEffect(() => { refresh(); }, []);
 
   async function submit() {

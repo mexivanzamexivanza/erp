@@ -1,4 +1,3 @@
-import { printElement } from "../lib/pdfExport";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { listLeads, createLead, updateLeadStage, deleteLead } from "../lib/erpApi";
@@ -33,7 +32,7 @@ export default function CRM() {
   async function handleCreate() {
     if (!name.trim()) return alert(t("crm.nameRequired"));
     try {
-      await createLead({ name, company: company||undefined, email: email||undefined, phone: phone||undefined, stage, deal_value: dealValue||undefined, owner: owner||undefined });
+      await createLead({ name, company: company||undefined, email: email||undefined, phone: phone||undefined, stage, value: dealValue||undefined, owner_name: owner||undefined });
       setName(""); setCompany(""); setEmail(""); setPhone(""); setStage("new"); setDealValue(0); setOwner("");
       setShowForm(false); await load();
     } catch (e: any) { alert(e.message); }
@@ -48,8 +47,8 @@ export default function CRM() {
     catch (e: any) { alert(e.message); }
   }
 
-  const totalPipeline = leads.filter(l => l.stage !== "lost").reduce((s,l) => s + Number(l.deal_value||0), 0);
-  const wonValue      = leads.filter(l => l.stage === "won").reduce((s,l) => s + Number(l.deal_value||0), 0);
+  const totalPipeline = leads.filter(l => l.stage !== "lost").reduce((s,l) => s + Number(l.value||0), 0);
+  const wonValue      = leads.filter(l => l.stage === "won").reduce((s,l) => s + Number(l.value||0), 0);
   const tabStyle = (v: string) => ({ padding:"8px 18px", borderRadius:8, fontWeight:600, fontSize:13, cursor:"pointer", border:"1px solid "+(view===v?"var(--primary)":"var(--border)"), background:view===v?"var(--primary)":"white", color:view===v?"white":"var(--text)" });
 
   return (
@@ -116,7 +115,7 @@ export default function CRM() {
                   style={{ background: selected?.id === lead.id ? "#eff6ff" : "white", border: "1px solid var(--border)", borderRadius: 10, padding: 10, marginBottom: 8, cursor: "pointer", boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
                   <div style={{ fontWeight: 700, fontSize: 13 }}>{lead.name}</div>
                   {lead.company && <div style={{ fontSize: 11, color: "var(--muted)" }}>{lead.company}</div>}
-                  {lead.deal_value && <div style={{ fontSize: 12, color: "#16a34a", fontWeight: 600 }}>{money(lead.deal_value)}</div>}
+                  {lead.value && <div style={{ fontSize: 12, color: "#16a34a", fontWeight: 600 }}>{money(lead.value)}</div>}
                   <div style={{ display: "flex", gap: 4, marginTop: 6 }}>
                     <select style={{ fontSize: 10, borderRadius: 4, border: "1px solid var(--border)", padding: "1px 2px", flex: 1 }}
                       value={lead.stage} onClick={e => e.stopPropagation()} onChange={e => handleStageChange(lead.id, e.target.value)}>
@@ -143,8 +142,8 @@ export default function CRM() {
                   <td style={{ fontWeight: 600 }}>{l.name}</td>
                   <td style={{ color: "var(--muted)" }}>{l.company ?? "—"}</td>
                   <td><span style={{ background: STAGE_COLORS[l.stage], color: "white", borderRadius: 6, padding: "2px 8px", fontSize: 11, fontWeight: 600 }}>{t("crm.stages."+l.stage)}</span></td>
-                  <td style={{ fontWeight: 600 }}>{l.deal_value ? money(l.deal_value) : "—"}</td>
-                  <td style={{ color: "var(--muted)" }}>{l.owner ?? "—"}</td>
+                  <td style={{ fontWeight: 600 }}>{l.value ? money(l.value) : "—"}</td>
+                  <td style={{ color: "var(--muted)" }}>{l.owner_name ?? "—"}</td>
                   <td><button className="btn btnDanger" style={{ padding: "4px 8px", fontSize: 12 }} onClick={e => { e.stopPropagation(); handleDelete(l.id); }}>✕</button></td>
                 </tr>
               ))}</tbody>

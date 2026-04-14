@@ -17,7 +17,7 @@ const ROLE_DESC: Record<string, string> = {
 export default function UserRoles() {
   const { t } = useTranslation();
   const [roles, setRoles]           = useState<RoleRow[]>([]);
-  const [pending, setPending]       = useState<PendingUser[]>([]);
+  const [_pending, setPending]       = useState<PendingUser[]>([]);
   const [loading, setLoading]       = useState(true);
   const [email, setEmail]           = useState("");
   const [role, setRole]             = useState<string>("employee");

@@ -39,7 +39,7 @@ export default function PurchaseOrders() {
     try { setPOLines(await listPurchaseOrderLines(po.id)); } catch (e: any) { alert(e.message); }
   }
   useEffect(() => { refresh(); }, []);
-  useEffect(() => { if (selectedProduct) setUnitCost(Number(selectedProduct.cost ?? selectedProduct.price ?? 0)); }, [selectedProduct]);
+  useEffect(() => { if (selectedProduct) setUnitCost(Number(selectedProduct.price ?? 0)); }, [selectedProduct]);
   useEffect(() => { const v = vendors.find(x => x.id === vendorId); if (v) setVendorName(v.name); }, [vendorId, vendors]);
 
   function addLine() {
@@ -53,7 +53,7 @@ export default function PurchaseOrders() {
     if (!vendorName.trim()) return alert(t("purchaseOrders.vendorNameRequired"));
     if (draftLines.length === 0) return alert(t("purchaseOrders.addLine"));
     try {
-      await createPurchaseOrder({ vendor_id: vendorId || undefined, vendor_name: vendorName, notes: notes || undefined, lines: draftLines.map(l => ({ product_id: l.product_id, qty: l.qty, unit_cost: l.unit_cost })) });
+      await createPurchaseOrder({ vendor_id: vendorId || undefined, vendor_name: vendorName, notes: notes || undefined, lines: draftLines.map(l => ({ product_id: l.product_id, sku: l.sku, name: l.name, qty: l.qty, unit_cost: l.unit_cost })) });
       setVendorId(""); setVendorName(""); setNotes(""); setDraftLines([]); await refresh(); alert(t("purchaseOrders.created"));
     } catch (e: any) { alert(e.message); }
   }
@@ -154,7 +154,7 @@ export default function PurchaseOrders() {
                 <tr key={o.id} style={{ cursor: "pointer", background: selectedPO?.id === o.id ? "var(--primary-light)" : "white" }} onClick={() => loadPOLines(o)}>
                   <td style={{ fontWeight: 600 }}>{o.vendor_name}</td>
                   <td><span className={"badge " + (STATUS_COLORS[o.status] ?? "badge")}>{o.status}</span></td>
-                  <td style={{ fontWeight: 700 }}>{money(o.total)}</td>
+                  <td style={{ fontWeight: 700 }}>{money(o.total ?? 0)}</td>
                   <td>
                     <div style={{ display: "flex", gap: 4 }}>
                       {o.status === "draft"    && <button className="btn btnPrimary" style={{ fontSize: 11, padding: "3px 8px" }} onClick={e => { e.stopPropagation(); handleApprove(o.id); }}>{t("purchaseOrders.approve")}</button>}
@@ -185,7 +185,7 @@ export default function PurchaseOrders() {
                     <td style={{ fontWeight: 600 }}>{l.name}</td>
                     <td>{l.qty}</td>
                     <td>{money(l.unit_cost)}</td>
-                    <td style={{ fontWeight: 700 }}>{money(l.line_total)}</td>
+                    <td style={{ fontWeight: 700 }}>{money(l.line_total ?? 0)}</td>
                   </tr>
                 ))}</tbody>
               </table>

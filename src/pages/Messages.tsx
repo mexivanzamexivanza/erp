@@ -18,7 +18,7 @@ function timeAgo(dateStr: string) {
 }
 
 export default function Messages() {
-  const { t } = useTranslation();
+  const { t: _t } = useTranslation();
   const [channels, setChannels]     = useState<MessageChannelRow[]>([]);
   const [selected, setSelected]     = useState<MessageChannelRow | null>(null);
   const [messages, setMessages]     = useState<MessageRow[]>([]);
