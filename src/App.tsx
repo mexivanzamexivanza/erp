@@ -29,14 +29,18 @@ import UserRoles from "./pages/UserRoles";
 import CurrencyAndTemplates from "./pages/CurrencyAndTemplates";
 import Messages from "./pages/Messages";
 import RequireAuth from "./auth/RequireAuth";
+import Pricing from "./pages/Pricing";
+import Home from "./pages/Home";
 
 export default function App() {
   return (
     <Routes>
+      <Route path="/" element={<Home />} />
       <Route path="/demo" element={<DemoGateway />} />
       <Route path="/login" element={<Login />} />
-      <Route path="/" element={<RequireAuth><AppLayout /></RequireAuth>}>
-        <Route index element={<Navigate to="/dashboard" replace />} />
+      <Route path="/pricing" element={<Pricing />} />
+      <Route path="/app" element={<RequireAuth><AppLayout /></RequireAuth>}>
+        <Route index element={<Navigate to="/app/dashboard" replace />} />
         <Route path="dashboard"         element={<Dashboard />} />
         <Route path="calendar"          element={<Calendar />} />
         <Route path="messages"          element={<Messages />} />
@@ -63,8 +67,9 @@ export default function App() {
         <Route path="logistics"         element={<Logistics />} />
         <Route path="user-roles"        element={<RequireAuth requiredRole="admin"><UserRoles /></RequireAuth>} />
         <Route path="currency"          element={<CurrencyAndTemplates />} />
-        <Route path="*"                 element={<Navigate to="/dashboard" replace />} />
+        <Route path="*"                 element={<Navigate to="/app/dashboard" replace />} />
       </Route>
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }
