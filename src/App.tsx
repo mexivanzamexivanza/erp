@@ -1,4 +1,4 @@
-import { Navigate, Route, Routes } from "react-router-dom";
+﻿import { Navigate, Route, Routes } from "react-router-dom";
 import AppLayout from "./layouts/AppLayout";
 import Dashboard from "./pages/Dashboard";
 import Customers from "./pages/Customers";
@@ -34,7 +34,7 @@ export default function App() {
   return (
     <Routes>
       <Route path="/demo" element={<DemoGateway />} />
-        <Route path="/login" element={<Login />} />
+      <Route path="/login" element={<Login />} />
       <Route path="/" element={<RequireAuth><AppLayout /></RequireAuth>}>
         <Route index element={<Navigate to="/dashboard" replace />} />
         <Route path="dashboard"         element={<Dashboard />} />
@@ -61,10 +61,10 @@ export default function App() {
         <Route path="manufacturing"     element={<Manufacturing />} />
         <Route path="projects"          element={<Projects />} />
         <Route path="logistics"         element={<Logistics />} />
-        <Route path="user-roles" element={<RequireAuth requiredRole="admin"><UserRoles /></RequireAuth>} />
+        <Route path="user-roles"        element={<RequireAuth requiredRole="admin"><UserRoles /></RequireAuth>} />
         <Route path="currency"          element={<CurrencyAndTemplates />} />
+        <Route path="*"                 element={<Navigate to="/dashboard" replace />} />
       </Route>
-      <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>
   );
 }
