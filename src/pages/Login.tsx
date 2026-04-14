@@ -18,7 +18,7 @@ export default function Login() {
     try {
       const { error: authError } = await supabase.auth.signInWithPassword({ email, password });
       if (authError) throw new Error(authError.message);
-      navigate("/dashboard");
+      navigate("/app/dashboard");
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -35,7 +35,7 @@ export default function Login() {
         await supabase.auth.signUp({ email: "demo@erpsystem.com", password: "demo1234" });
         await supabase.auth.signInWithPassword({ email: "demo@erpsystem.com", password: "demo1234" });
       }
-      navigate("/dashboard");
+      navigate("/app/dashboard");
     } catch (err: any) {
       setError(err.message);
     } finally {

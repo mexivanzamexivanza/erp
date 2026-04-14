@@ -1,10 +1,8 @@
-import { printElement } from "../lib/pdfExport";
+import RecordNotes from "../components/RecordNotes";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { listEmployees, createEmployee, deleteEmployee } from "../lib/erpApi";
 import type { EmployeeRow } from "../lib/erpApi";
-import RecordNotes from "../components/RecordNotes";
-
 export default function Employees() {
   const { t } = useTranslation();
   const [employees, setEmployees] = useState<EmployeeRow[]>([]);

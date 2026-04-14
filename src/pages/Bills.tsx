@@ -12,7 +12,7 @@ export default function Bills() {
   const [bills, setBills]         = useState<BillRow[]>([]);
   const [pos, setPOs]             = useState<PurchaseOrderRow[]>([]);
   const [products, setProducts]   = useState<ProductRow[]>([]);
-  const [vendors, setVendors]     = useState<VendorRow[]>([]);
+  const [_vendors, setVendors]   = useState<VendorRow[]>([]);
   const [loading, setLoading]     = useState(true);
   const [selectedId, setSelectedId] = useState("");
   const selected = useMemo(() => bills.find(b => b.id === selectedId) ?? null, [bills, selectedId]);

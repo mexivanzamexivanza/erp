@@ -1,4 +1,3 @@
-import { printElement } from "../lib/pdfExport";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { listAuditLog } from "../lib/erpApi";

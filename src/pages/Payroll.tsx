@@ -1,4 +1,3 @@
-import RecordNotes from "../components/RecordNotes";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { listPayrollRuns, createPayrollRun, approvePayrollRun, deletePayrollRun, listPayrollLines } from "../lib/erpApi";

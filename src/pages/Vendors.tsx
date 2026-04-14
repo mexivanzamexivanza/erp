@@ -1,10 +1,8 @@
-import { printElement } from "../lib/pdfExport";
+import RecordNotes from "../components/RecordNotes";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { listVendors, createVendor } from "../lib/erpApi";
 import type { VendorRow } from "../lib/erpApi";
-import RecordNotes from "../components/RecordNotes";
-
 export default function Vendors() {
   const { t } = useTranslation();
   const [vendors, setVendors] = useState<VendorRow[]>([]);

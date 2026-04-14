@@ -11,7 +11,7 @@ function SideLink({ to, icon, label, badge }: { to: string; icon: string; label:
       <span style={{ fontSize: 15 }}>{icon}</span>
       <span style={{ flex: 1 }}>{label}</span>
       {badge != null && badge > 0 && (
-        <span style={{ background: "#dc2626", color: "white", borderRadius: 10, fontSize: 10, fontWeight: 700, minWidth: 18, height: 18, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 4px" }}>{badge > 9 ? "9+" : badge}</span>
+        <span style={{ background: "#dc2626", color: "white", borderRadius: 10, fontSize: 10, fontWeight: 700, minWidth: 18, height: 18, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 4px" }}>{badge}</span>
       )}
     </NavLink>
   );
@@ -34,7 +34,6 @@ export default function AppLayout() {
     localStorage.setItem("erp_language", next);
   }
 
-  // Auto-sync calendar on mount
   const syncDone = { current: false };
   if (!syncDone.current) {
     syncDone.current = true;
@@ -57,46 +56,47 @@ export default function AppLayout() {
         </div>
         <nav className="sidebar-nav">
           <Group label={t("nav.overview")} />
-          <SideLink to="/dashboard"         icon="📊" label={t("nav.dashboard")} />
-          <SideLink to="/calendar"          icon="📅" label={t("calendar.title")} />
-          <SideLink to="/messages"          icon="💬" label="Mensajes" />
+          <SideLink to="/app/dashboard"         icon="📊" label={t("nav.dashboard")} />
+          <SideLink to="/app/calendar"          icon="📅" label={t("calendar.title")} />
+          <SideLink to="/app/messages"          icon="💬" label="Mensajes" />
 
           <Group label={t("nav.finance")} />
-          <SideLink to="/financial-reports" icon="📑" label={t("reports.title")} />
-          <SideLink to="/general-ledger"    icon="📒" label={t("nav.generalLedger")} />
-          <SideLink to="/invoices"          icon="🧾" label={t("nav.invoices")} />
-          <SideLink to="/bills"             icon="📄" label={t("nav.bills")} />
-          <SideLink to="/ar-aging"          icon="📈" label={t("nav.arAging")} />
-          <SideLink to="/ap-aging"          icon="📉" label={t("nav.apAging")} />
+          <SideLink to="/app/financial-reports" icon="📑" label={t("reports.title")} />
+          <SideLink to="/app/general-ledger"    icon="📒" label={t("nav.generalLedger")} />
+          <SideLink to="/app/invoices"          icon="🧾" label={t("nav.invoices")} />
+          <SideLink to="/app/bills"             icon="📄" label={t("nav.bills")} />
+          <SideLink to="/app/ar-aging"          icon="📈" label={t("nav.arAging")} />
+          <SideLink to="/app/ap-aging"          icon="📉" label={t("nav.apAging")} />
 
           <Group label={t("nav.hr")} />
-          <SideLink to="/employees"         icon="👥" label={t("nav.employees")} />
-          <SideLink to="/payroll"           icon="💰" label={t("nav.payroll")} />
+          <SideLink to="/app/employees"         icon="👥" label={t("nav.employees")} />
+          <SideLink to="/app/payroll"           icon="💸" label={t("nav.payroll")} />
 
           <Group label={t("nav.sales")} />
-          <SideLink to="/crm"               icon="📣" label={t("crm.title")} />
-          <SideLink to="/sales"             icon="🛒" label={t("nav.salesOrders")} />
-          <SideLink to="/customers"         icon="🤝" label={t("nav.customers")} />
+          <SideLink to="/app/crm"               icon="📣" label={t("crm.title")} />
+          <SideLink to="/app/sales"             icon="🛒" label={t("nav.salesOrders")} />
+          <SideLink to="/app/customers"         icon="🤝" label={t("nav.customers")} />
 
           <Group label={t("nav.inventory")} />
-          <SideLink to="/inventory"         icon="📦" label={t("nav.inventory")} />
-          <SideLink to="/stock-movements"   icon="🔄" label={t("nav.stockMovements")} />
+          <SideLink to="/app/inventory"         icon="📦" label={t("nav.inventory")} />
+          <SideLink to="/app/stock-movements"   icon="🔄" label={t("nav.stockMovements")} />
 
           <Group label={t("nav.procurement")} />
-          <SideLink to="/vendors"           icon="🏭" label={t("nav.vendors")} />
-          <SideLink to="/purchase-orders"   icon="📋" label={t("nav.purchaseOrders")} />
-          <SideLink to="/receiving"         icon="📥" label={t("nav.receiving")} />
+          <SideLink to="/app/vendors"           icon="🏭" label={t("nav.vendors")} />
+          <SideLink to="/app/purchase-orders"   icon="📋" label={t("nav.purchaseOrders")} />
+          <SideLink to="/app/receiving"         icon="📥" label={t("nav.receiving")} />
 
           <Group label={t("manufacturing.title")} />
-          <SideLink to="/manufacturing"     icon="🏗️"  label={t("manufacturing.title")} />
-          <SideLink to="/projects"          icon="📌" label={t("projects.title")} />
-          <SideLink to="/logistics"         icon="🚚" label={t("logistics.title")} />
+          <SideLink to="/app/manufacturing"     icon="🏗️"  label={t("manufacturing.title")} />
+          <SideLink to="/app/projects"          icon="📌" label={t("projects.title")} />
+          <SideLink to="/app/logistics"         icon="🚚" label={t("logistics.title")} />
 
           <Group label={t("nav.system")} />
-          <SideLink to="/currency"          icon="💱" label={t("currency.pageTitle")} />
-          <SideLink to="/user-roles"        icon="👑" label={t("roles.title")} />
-          <SideLink to="/audit-log"         icon="🔍" label={t("nav.auditLog")} />
-          <SideLink to="/settings"          icon="⚙️"  label={t("nav.settings")} />
+          <SideLink to="/app/currency"          icon="💱" label={t("currency.pageTitle")} />
+          <SideLink to="/app/user-roles"        icon="👑" label={t("roles.title")} />
+          <SideLink to="/app/audit-log"         icon="🔍" label={t("nav.auditLog")} />
+          <SideLink to="/app/settings"          icon="⚙️"  label={t("nav.settings")} />
+          <SideLink to="/pricing"           icon="💰" label="Planes y Precios" />
         </nav>
         <div className="sidebar-footer">
           <button onClick={toggleLanguage} className="btn"

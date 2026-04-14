@@ -3,8 +3,6 @@ import { useTranslation } from "react-i18next";
 import { supabase } from "../lib/supabaseClient";
 
 type RoleRow = { id: string; email: string; role: string; created_at: string };
-type PendingUser = { id: string; email: string; created_at: string };
-
 const ROLES = ["admin", "manager", "employee"] as const;
 const ROLE_ICONS: Record<string, string> = { admin: "\uD83D\uDC51", manager: "\uD83D\uDCBC", employee: "\uD83D\uDC64" };
 const ROLE_COLORS: Record<string, string> = { admin: "#dc2626", manager: "#d97706", employee: "#2563eb" };
@@ -17,7 +15,6 @@ const ROLE_DESC: Record<string, string> = {
 export default function UserRoles() {
   const { t } = useTranslation();
   const [roles, setRoles]           = useState<RoleRow[]>([]);
-  const [pending, setPending]       = useState<PendingUser[]>([]);
   const [loading, setLoading]       = useState(true);
   const [email, setEmail]           = useState("");
   const [role, setRole]             = useState<string>("employee");
@@ -55,7 +52,7 @@ export default function UserRoles() {
 
       // Load all auth users to find pending (no role assigned)
       // We use a workaround: list users via supabase admin or just show "invite" flow
-      setPending([]);
+
     } catch (e: any) { alert(e.message); }
     finally { setLoading(false); }
   }

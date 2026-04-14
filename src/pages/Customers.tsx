@@ -1,10 +1,8 @@
-import { printElement } from "../lib/pdfExport";
+import RecordNotes from "../components/RecordNotes";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { listCustomers, createCustomer, deleteCustomer } from "../lib/erpApi";
 import type { CustomerRow } from "../lib/erpApi";
-import RecordNotes from "../components/RecordNotes";
-
 export default function Customers() {
   const { t } = useTranslation();
   const [customers, setCustomers] = useState<CustomerRow[]>([]);

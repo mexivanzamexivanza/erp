@@ -1,6 +1,4 @@
-import { printElement } from "../lib/pdfExport";
-import RecordNotes from "../components/RecordNotes";
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { listPurchaseOrders, listPurchaseOrderLines, receivePurchaseOrder } from "../lib/erpApi";
 import type { PurchaseOrderRow, PurchaseOrderLineRow } from "../lib/erpApi";
@@ -26,7 +24,7 @@ export default function Receiving() {
       const ls = await listPurchaseOrderLines(poId);
       setLines(ls);
       const qtys: Record<string, number> = {};
-      ls.forEach(l => { qtys[l.id] = Number(l.qty); });
+      ls.forEach((l: PurchaseOrderLineRow) => { qtys[l.id] = Number(l.qty); });
       setReceiveQtys(qtys);
     } catch (e: any) { alert(e.message); } finally { setLoadingLines(false); }
   }
@@ -39,15 +37,15 @@ export default function Receiving() {
   }
 
   async function handleReceiveAll() {
-    const toReceive = lines.filter(l => (receiveQtys[l.id] ?? 0) > 0);
+    const toReceive = lines.filter((l: PurchaseOrderLineRow) => (receiveQtys[l.id] ?? 0) > 0);
     if (toReceive.length === 0) return alert(t("receiving.nothingToReceive"));
     try {
-      await Promise.all(toReceive.map(l => receivePurchaseOrder(l.id as any, receiveQtys[l.id])));
+      await Promise.all(toReceive.map((l: PurchaseOrderLineRow) => receivePurchaseOrder(l.id as any, receiveQtys[l.id])));
       await loadLines(selectedPO); alert(t("receiving.received2"));
     } catch (e: any) { alert(e.message); }
   }
 
-  const selectedOrder = orders.find(o => o.id === selectedPO);
+  const selectedOrder = orders.find((o: PurchaseOrderRow) => o.id === selectedPO);
 
   return (
     <div style={{ display: "grid", gap: 20 }}>
@@ -60,7 +58,7 @@ export default function Receiving() {
         <div style={{ fontWeight: 700, marginBottom: 12 }}>{t("receiving.selectPO")}</div>
         <select className="input" style={{ maxWidth: 480 }} value={selectedPO} onChange={e => loadLines(e.target.value)}>
           <option value="">{t("receiving.selectPOPrompt")}</option>
-          {orders.map(o => (
+          {orders.map((o: PurchaseOrderRow) => (
             <option key={o.id} value={o.id}>{o.vendor_name} — {o.status} — {new Date(o.created_at).toLocaleDateString()}</option>
           ))}
         </select>
@@ -94,7 +92,7 @@ export default function Receiving() {
                 </tr>
               </thead>
               <tbody>
-                {lines.map(l => (
+                {lines.map((l: PurchaseOrderLineRow) => (
                   <tr key={l.id}>
                     <td style={{ fontFamily: "monospace", color: "var(--muted)" }}>{l.sku}</td>
                     <td style={{ fontWeight: 600 }}>{l.name}</td>
@@ -102,7 +100,7 @@ export default function Receiving() {
                     <td>
                       <input className="input" style={{ width: 80 }} type="number" min={0} max={Number(l.qty)}
                         value={receiveQtys[l.id] ?? 0}
-                        onChange={e => setReceiveQtys(prev => ({ ...prev, [l.id]: Number(e.target.value) }))} />
+                        onChange={e => setReceiveQtys((prev: Record<string, number>) => ({ ...prev, [l.id]: Number(e.target.value) }))} />
                     </td>
                     <td>
                       <button className="btn btnPrimary" style={{ fontSize: 12, padding: "4px 10px" }}

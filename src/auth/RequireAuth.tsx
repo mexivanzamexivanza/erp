@@ -30,7 +30,7 @@ export default function RequireAuth({ children, requiredRole }: Props) {
         <div style={{ fontSize:48 }}>&#128683;</div>
         <div style={{ fontSize:20, fontWeight:700 }}>Access Denied</div>
         <div style={{ color:"var(--muted)" }}>You need admin privileges to view this page.</div>
-        <a href="/dashboard" style={{ color:"var(--primary)", textDecoration:"none", fontWeight:600 }}>&#8592; Back to Dashboard</a>
+        <a href="/app/dashboard" style={{ color:"var(--primary)", textDecoration:"none", fontWeight:600 }}>&#8592; Back to Dashboard</a>
       </div>
     );
 
