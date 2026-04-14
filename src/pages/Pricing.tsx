@@ -15,7 +15,16 @@ const BUSINESS_INCLUDED  = ["Hasta 15 usuarios","Todo lo del plan Starter","CRM 
 const BUSINESS_EXCLUDED  = ["API access completo","White-label / marca propia","Usuarios ilimitados"];
 const ENTERPRISE_INCLUDED= ["Usuarios ILIMITADOS","Todo lo del plan Business","API access completo","White-label / tu propia marca","Onboarding personalizado","Gerente de cuenta dedicado","SLA 99.9%","Soporte 24/7"];
 
-const INDUSTRIES = ["Restaurantes","Tiendas","Manufactura","Clinicas","Agencias","Distribuidoras","Construccion","Servicios"];
+const INDUSTRIES = [
+  { label: "Restaurantes",   slug: "restaurantes"   },
+  { label: "Tiendas",        slug: "tiendas"        },
+  { label: "Manufactura",    slug: "manufactura"    },
+  { label: "Clinicas",       slug: "clinicas"       },
+  { label: "Agencias",       slug: "agencias"       },
+  { label: "Distribuidoras", slug: "distribuidoras" },
+  { label: "Construccion",   slug: "construccion"   },
+  { label: "Servicios",      slug: "servicios"      },
+];
 
 const ALL_INCLUDE = ["Actualizaciones automaticas","Copias de seguridad diarias","SSL y datos cifrados","Acceso desde cualquier dispositivo","Soporte en espanol","Demo siempre disponible"];
 
@@ -204,8 +213,14 @@ export default function Pricing() {
         <div style={{ textAlign:"center", marginBottom:60 }}>
           <div style={{ fontSize:13, color:"rgba(255,255,255,0.5)", letterSpacing:2, textTransform:"uppercase", marginBottom:16 }}>{isEs ? "IDEAL PARA" : "IDEAL FOR"}</div>
           <div style={{ display:"flex", flexWrap:"wrap", gap:10, justifyContent:"center" }}>
-            {INDUSTRIES.map(i => (
-              <span key={i} style={{ background:"rgba(255,255,255,0.07)", border:"1px solid rgba(255,255,255,0.12)", borderRadius:20, padding:"8px 18px", fontSize:14 }}>{i}</span>
+            {INDUSTRIES.map(ind => (
+              <span
+                key={ind.slug}
+                onClick={() => navigate(`/industria/${ind.slug}`)}
+                style={{ background:"rgba(255,255,255,0.07)", border:"1px solid rgba(255,255,255,0.12)", borderRadius:20, padding:"8px 18px", fontSize:14, cursor:"pointer" }}
+              >
+                {ind.label}
+              </span>
             ))}
           </div>
         </div>

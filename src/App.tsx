@@ -31,6 +31,7 @@ import Messages from "./pages/Messages";
 import RequireAuth from "./auth/RequireAuth";
 import Pricing from "./pages/Pricing";
 import Home from "./pages/Home";
+import IndustryPage from "./pages/IndustryPage";
 
 export default function App() {
   return (
@@ -39,6 +40,7 @@ export default function App() {
       <Route path="/demo" element={<DemoGateway />} />
       <Route path="/login" element={<Login />} />
       <Route path="/pricing" element={<Pricing />} />
+      <Route path="/industria/:slug" element={<IndustryPage />} />
       <Route path="/app" element={<RequireAuth><AppLayout /></RequireAuth>}>
         <Route index element={<Navigate to="/app/dashboard" replace />} />
         <Route path="dashboard"         element={<Dashboard />} />
