@@ -17,7 +17,7 @@ const ROLE_DESC: Record<string, string> = {
 export default function UserRoles() {
   const { t } = useTranslation();
   const [roles, setRoles]           = useState<RoleRow[]>([]);
-  const [pending, setPending]       = useState<PendingUser[]>([]);
+  const [_pending, _setPending]       = useState<PendingUser[]>([]);
   const [loading, setLoading]       = useState(true);
   const [email, setEmail]           = useState("");
   const [role, setRole]             = useState<string>("employee");
@@ -55,7 +55,7 @@ export default function UserRoles() {
 
       // Load all auth users to find pending (no role assigned)
       // We use a workaround: list users via supabase admin or just show "invite" flow
-      setPending([]);
+      _setPending([]);
     } catch (e: any) { alert(e.message); }
     finally { setLoading(false); }
   }

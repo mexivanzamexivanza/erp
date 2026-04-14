@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import { useTranslation } from "react-i18next";
 import { listChannels, createChannel, deleteChannel, listMessages, sendMessage, deleteMessage } from "../lib/erpApi";
 import type { MessageChannelRow, MessageRow } from "../lib/erpApi";
 import { supabase } from "../lib/supabaseClient";
@@ -18,7 +17,6 @@ function timeAgo(dateStr: string) {
 }
 
 export default function Messages() {
-  const { t } = useTranslation();
   const [channels, setChannels]     = useState<MessageChannelRow[]>([]);
   const [selected, setSelected]     = useState<MessageChannelRow | null>(null);
   const [messages, setMessages]     = useState<MessageRow[]>([]);

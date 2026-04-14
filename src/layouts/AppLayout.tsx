@@ -7,7 +7,7 @@ import { syncCalendarFromERP } from "../lib/erpApi";
 
 function SideLink({ to, icon, label, badge }: { to: string; icon: string; label: string; badge?: number }) {
   return (
-    <NavLink to={to} className={({ isActive }) => "sidebar-link" + (isActive ? " active" : "")}>
+    <NavLink to={to} className={({ isActive }: { isActive: boolean }) => "sidebar-link" + (isActive ? " active" : "")}>
       <span style={{ fontSize: 15 }}>{icon}</span>
       <span style={{ flex: 1 }}>{label}</span>
       {badge != null && badge > 0 && (

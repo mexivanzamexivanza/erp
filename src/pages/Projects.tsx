@@ -1,5 +1,3 @@
-import { printElement } from "../lib/pdfExport";
-import RecordNotes from "../components/RecordNotes";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { listProjects, createProject, updateProjectStatus, deleteProject, listProjectTasks, createProjectTask, updateTaskStatus, deleteTask } from "../lib/erpApi";

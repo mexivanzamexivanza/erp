@@ -41,7 +41,7 @@ export default function Inventory() {
   async function handleMovement() {
     if (!selected || movQty <= 0) return alert(t("inventory.qtyRequired"));
     setAddingMov(true);
-    try { await createInventoryMovement({ product_id: selected.id, type: movType, qty: movQty, note: movNote||undefined }); setMovQty(1); setMovNote(""); await load(); alert(t("inventory.movementAdded")); }
+    try { await createInventoryMovement({ product_id: selected.id, qty_delta: movType === "out" ? -movQty : movQty, reason: movType, note: movNote||undefined }); setMovQty(1); setMovNote(""); await load(); alert(t("inventory.movementAdded")); }
     catch (e: any) { alert(e.message); } finally { setAddingMov(false); }
   }
   function printStockReport() {
@@ -178,10 +178,10 @@ export default function Inventory() {
               <thead><tr><th>SKU</th><th>{t("common.name")}</th><th>{t("inventory.type")}</th><th>{t("inventory.qty")}</th><th>{t("common.date")}</th><th>{t("common.notes")}</th></tr></thead>
               <tbody>{movements.map(m=>(
                 <tr key={m.id}>
-                  <td style={{ fontFamily:"monospace",color:"var(--muted)" }}>{m.sku}</td>
-                  <td style={{ fontWeight:600 }}>{m.product_name}</td>
-                  <td><span className={`badge ${m.type==="in"?"badge-success":m.type==="out"?"badge-danger":"badge-warning"}`}>{m.type}</span></td>
-                  <td style={{ fontWeight:700 }}>{m.qty}</td>
+                  <td style={{ fontFamily:"monospace",color:"var(--muted)" }}>{products.find(p=>p.id===m.product_id)?.sku??m.product_id.slice(0,8)+"..."}</td>
+                  <td style={{ fontWeight:600 }}>{products.find(p=>p.id===m.product_id)?.name??"—"}</td>
+                  <td><span className={`badge ${m.reason==="in"?"badge-success":m.reason==="out"?"badge-danger":"badge-warning"}`}>{m.reason}</span></td>
+                  <td style={{ fontWeight:700 }}>{m.qty_delta}</td>
                   <td style={{ color:"var(--muted)",fontSize:12 }}>{new Date(m.created_at).toLocaleString()}</td>
                   <td style={{ color:"var(--muted)" }}>{m.note??"—"}</td>
                 </tr>

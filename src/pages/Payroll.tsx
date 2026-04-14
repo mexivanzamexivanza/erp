@@ -1,7 +1,6 @@
-import RecordNotes from "../components/RecordNotes";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { listPayrollRuns, createPayrollRun, approvePayrollRun, deletePayrollRun, listPayrollLines } from "../lib/erpApi";
+import { listPayrollRuns, createPayrollRun, approvePayrollRun, deletePayrollRun, listPayrollLines, listEmployees } from "../lib/erpApi";
 import type { PayrollRunRow, PayrollLineRow } from "../lib/erpApi";
 import { generatePayrollPDF } from "../lib/pdfExport";
 
@@ -31,7 +30,19 @@ export default function Payroll() {
     if (!periodStart || !periodEnd) return alert(t("payroll.period"));
     setCreating(true);
     try {
-      const run = await createPayrollRun({ period_start: periodStart, period_end: periodEnd });
+      const employees = await listEmployees();
+      const TAX_RATE = 0.15;
+      const lines = employees.filter(e => e.status === "active").map(e => ({
+        employee_id: e.id,
+        employee_name: e.name,
+        department: e.department,
+        position: e.position,
+        gross_salary: e.salary,
+        tax_deduction: Math.round(e.salary * TAX_RATE * 100) / 100,
+        other_deductions: 0,
+        net_salary: Math.round(e.salary * (1 - TAX_RATE) * 100) / 100,
+      }));
+      const run = await createPayrollRun({ period_label: `${periodStart} — ${periodEnd}`, period_start: periodStart, period_end: periodEnd, lines });
       await refresh(); await loadLines(run); setPeriodStart(""); setPeriodEnd("");
     } catch (e: any) { alert(e.message); } finally { setCreating(false); }
   }
@@ -48,8 +59,8 @@ export default function Payroll() {
 
   const totals = lines.reduce((acc, l) => ({
     gross: acc.gross + Number(l.gross_salary),
-    deductions: acc.deductions + Number(l.tax_amount) + Number(l.other_deductions),
-    net: acc.net + Number(l.net_pay),
+    deductions: acc.deductions + Number(l.tax_deduction) + Number(l.other_deductions),
+    net: acc.net + Number(l.net_salary),
   }), { gross: 0, deductions: 0, net: 0 });
 
   return (
@@ -135,9 +146,9 @@ export default function Payroll() {
                           <td style={{ fontWeight: 600 }}>{l.employee_name}</td>
                           <td style={{ color: "var(--muted)" }}>{l.department ?? "—"}</td>
                           <td>{money(l.gross_salary)}</td>
-                          <td style={{ color: "var(--danger)" }}>{money(l.tax_amount)}</td>
+                          <td style={{ color: "var(--danger)" }}>{money(l.tax_deduction)}</td>
                           <td style={{ color: "var(--danger)" }}>{money(l.other_deductions)}</td>
-                          <td style={{ fontWeight: 700, color: "var(--success)" }}>{money(l.net_pay)}</td>
+                          <td style={{ fontWeight: 700, color: "var(--success)" }}>{money(l.net_salary)}</td>
                         </tr>
                       ))}
                     </tbody>

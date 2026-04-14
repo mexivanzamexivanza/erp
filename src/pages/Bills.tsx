@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { listBills, listBillLines, listBillPayments, createBillFromPurchaseOrder, createBillManual, recordBillPayment, voidBill, listPurchaseOrders, listProducts, listVendors } from "../lib/erpApi";
-import type { BillRow, BillLineRow, BillPaymentRow, PurchaseOrderRow, ProductRow, VendorRow } from "../lib/erpApi";
+import { listBills, listBillLines, listBillPayments, createBillFromPurchaseOrder, createBillManual, recordBillPayment, voidBill, listPurchaseOrders, listProducts } from "../lib/erpApi";
+import type { BillRow, BillLineRow, BillPaymentRow, PurchaseOrderRow, ProductRow } from "../lib/erpApi";
 import { printElement } from "../lib/pdfExport";
 import RecordNotes from "../components/RecordNotes";
 
@@ -12,7 +12,6 @@ export default function Bills() {
   const [bills, setBills]         = useState<BillRow[]>([]);
   const [pos, setPOs]             = useState<PurchaseOrderRow[]>([]);
   const [products, setProducts]   = useState<ProductRow[]>([]);
-  const [vendors, setVendors]     = useState<VendorRow[]>([]);
   const [loading, setLoading]     = useState(true);
   const [selectedId, setSelectedId] = useState("");
   const selected = useMemo(() => bills.find(b => b.id === selectedId) ?? null, [bills, selectedId]);
@@ -37,8 +36,8 @@ export default function Bills() {
   async function refresh() {
     setLoading(true);
     try {
-      const [bs, ps, prods, vs] = await Promise.all([listBills(), listPurchaseOrders(), listProducts(), listVendors()]);
-      setBills(bs); setPOs(ps); setProducts(prods); setVendors(vs);
+      const [bs, ps, prods] = await Promise.all([listBills(), listPurchaseOrders(), listProducts()]);
+      setBills(bs); setPOs(ps); setProducts(prods);
     } catch (e: any) { alert(e.message); } finally { setLoading(false); }
   }
   async function loadDetail(id: string) {
@@ -48,7 +47,7 @@ export default function Bills() {
   }
   useEffect(() => { refresh(); }, []);
   useEffect(() => { if (selectedId) loadDetail(selectedId); }, [selectedId]);
-  useEffect(() => { if (selectedProduct) setMCost(Number(selectedProduct.cost ?? selectedProduct.price ?? 0)); }, [selectedProduct]);
+  useEffect(() => { if (selectedProduct) setMCost(Number(selectedProduct.price ?? 0)); }, [selectedProduct]);
 
   async function handleCreateFromPO() {
     if (!poId) return alert(t("bills.pickPO"));
@@ -59,7 +58,7 @@ export default function Bills() {
     if (!vendorName.trim()) return alert(t("bills.vendor") + " required");
     if (draftLines.length === 0) return alert(t("bills.addLine") + " required");
     try {
-      await createBillManual({ vendor_name: vendorName, note: manualNote||undefined, lines: draftLines.map(l => ({ product_id: l.product_id, qty: l.qty, unit_cost: l.unit_cost })) });
+      await createBillManual({ vendor_name: vendorName, lines: draftLines.map(l => ({ product_id: l.product_id, sku: l.sku, name: l.name, qty: l.qty, unit_cost: l.unit_cost })) });
       setVendorName(""); setManualNote(""); setDraftLines([]); await refresh(); alert(t("bills.created"));
     } catch (e: any) { alert(e.message); }
   }

@@ -166,7 +166,7 @@ export default function Invoices() {
                         <td style={{ fontFamily: "monospace", color: "var(--muted)" }}>{l.sku}</td>
                         <td style={{ fontWeight: 600 }}>{l.name}</td>
                         <td>{l.qty}</td>
-                        <td>{money(l.unit_price)}</td>
+                        <td>{money(l.price)}</td>
                         <td style={{ fontWeight: 700 }}>{money(l.line_total)}</td>
                       </tr>
                     ))}

@@ -17,6 +17,7 @@ export type ProductRow = {
   sku: string;
   name: string;
   stock: number;
+  price?: number;
   created_at: string;
 };
 
@@ -34,6 +35,7 @@ export type PurchaseOrderRow = {
   vendor_name: string;
   status: string;
   notes: string | null;
+  total?: number;
   created_by: UUID;
   created_at: string;
 };
@@ -47,6 +49,7 @@ export type PurchaseOrderLineRow = {
   name: string;
   qty: number;
   unit_cost: number;
+  line_total?: number;
   received_qty: number;
   created_at: string;
 };
@@ -57,6 +60,7 @@ export type SalesOrderRow = {
   customer_id: UUID | null;
   customer_name: string;
   status: string;
+  total?: number;
   created_by: UUID;
   created_at: string;
 };
@@ -86,6 +90,10 @@ export type InventoryMovementRow = {
   qty_delta: number;
   reason: string;
   note: string | null;
+  sku?: string;
+  product_name?: string;
+  type?: string;
+  qty?: number;
   created_by: UUID;
   created_at: string;
 };
@@ -99,7 +107,7 @@ export async function approvePurchaseOrder(po_id: UUID) {
 }
 
 export async function cancelPurchaseOrder(po_id: UUID, note?: string) {
-  const { data, error } = await supabase.rpc("cancel_purchase_order", { p_po_id: input.po_id, p_note: note ?? null });
+  const { data, error } = await supabase.rpc("cancel_purchase_order", { p_po_id: po_id, p_note: note ?? null });
   if (error) throw new Error(error.message);
   return data;
 }
@@ -261,6 +269,12 @@ export type ARAgingRow = {
   balance_due: number;
   days_past_due: number;
   bucket: string;
+  current?: number;
+  days_30?: number;
+  days_60?: number;
+  days_90?: number;
+  over_90?: number;
+  total_due?: number;
 };
 
 export async function listARAging(): Promise<ARAgingRow[]> {
@@ -330,6 +344,12 @@ export type APAgingRow = {
   balance_due: number;
   days_past_due: number;
   bucket: string;
+  current?: number;
+  days_30?: number;
+  days_60?: number;
+  days_90?: number;
+  over_90?: number;
+  total_due?: number;
 };
 
 export async function listBills(): Promise<BillRow[]> {
@@ -555,6 +575,7 @@ export type InvoiceLineRow = {
   name: string;
   qty: number;
   price: number;
+  unit_price?: number;
   line_total: number;
   created_at: string;
 };
@@ -698,6 +719,7 @@ export type PayrollRunRow = {
   total_gross: number;
   total_deductions: number;
   total_net: number;
+  employee_count?: number;
   created_at: string;
 };
 
