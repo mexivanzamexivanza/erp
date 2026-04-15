@@ -92,6 +92,7 @@ export default function AppLayout() {
           <SideLink to="/app/logistics"         icon="🚚" label={t("logistics.title")} />
 
           <Group label={t("nav.system")} />
+          <SideLink to="/app/documents"         icon="📄" label="Documentos" />
           <SideLink to="/app/currency"          icon="💱" label={t("currency.pageTitle")} />
           <SideLink to="/app/user-roles"        icon="👑" label={t("roles.title")} />
           <SideLink to="/app/audit-log"         icon="🔍" label={t("nav.auditLog")} />
