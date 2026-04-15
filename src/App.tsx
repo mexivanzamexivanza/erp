@@ -28,6 +28,7 @@ import Calendar from "./pages/Calendar";
 import UserRoles from "./pages/UserRoles";
 import CurrencyAndTemplates from "./pages/CurrencyAndTemplates";
 import Messages from "./pages/Messages";
+import Documents from "./pages/Documents";
 import RequireAuth from "./auth/RequireAuth";
 import Pricing from "./pages/Pricing";
 import Home from "./pages/Home";
@@ -65,6 +66,7 @@ export default function App() {
         <Route path="manufacturing"     element={<Manufacturing />} />
         <Route path="projects"          element={<Projects />} />
         <Route path="logistics"         element={<Logistics />} />
+        <Route path="documents"         element={<Documents />} />
         <Route path="user-roles"        element={<RequireAuth requiredRole="admin"><UserRoles /></RequireAuth>} />
         <Route path="currency"          element={<CurrencyAndTemplates />} />
         <Route path="*"                 element={<Navigate to="/app/dashboard" replace />} />
