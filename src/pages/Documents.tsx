@@ -355,7 +355,10 @@ export default function Documents() {
             <div style={{ fontWeight: 700, marginBottom: 10 }}>Subir archivo</div>
             <input
               type="file"
-              onChange={(e) => { void uploadFile(e.target.files?.[0] ?? null); e.currentTarget.value = ""; }}
+              onChange={async (e) => {
+                await uploadFile(e.target.files?.[0] ?? null);
+                e.currentTarget.value = "";
+              }}
               disabled={uploading}
             />
             {uploading && <div style={{ marginTop: 10, color: "var(--muted)", fontSize: 13 }}>Subiendo archivo...</div>}
